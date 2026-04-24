@@ -2,58 +2,142 @@
 <html lang="lt">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Freelancer Invoices</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
-
-<header class="hero">
-    <h1>Freelancer Invoices</h1>
-    <p>Paprastas ir galingas įrankis jūsų pajamoms sekti bei mokesčiams skaičiuoti.</p>
-</header>
-
-<main class="container">
-    <section class="form-card">
-        <h3>Pridėti naują sąskaitą</h3>
-        <form id="invoiceForm">
-            <div class="input-group">
-                <label>Klientas <i class="fas fa-info-circle tooltip"><span class="tooltiptext">Įmonės arba asmens pavadinimas.</span></i></label>
-                <input type="text" id="client" placeholder="Pvz. UAB „Pavyzdys“" required>
+<body class="bg-light">
+    <main class="container py-5">
+        <section class="landing-card p-4 p-lg-5 rounded-4 shadow-sm mb-5">
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-8">
+                    <span class="eyebrow text-uppercase text-primary fw-semibold">Freelancer Dashboard</span>
+                    <h1 class="display-6 mt-3">Sveiki atvykę į Freelancer Invoices</h1>
+                    <p class="lead text-muted mb-4">Paprastą įrankį jūsų pajamoms sekti ir mokesčiams skaičiuoti. Pridėkite sąskaitas, stebėkite automatinį GPM skaičiavimą ir greitai tvarkykite finansus visame įrenginyje.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary py-2 px-3">Mobiliems pritaikytas</span>
+                        <span class="badge rounded-pill bg-success bg-opacity-10 text-success py-2 px-3">Intuityvus valdymas</span>
+                        <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning py-2 px-3">Automatiniai mokesčiai</span>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="landing-visual p-4 rounded-4 bg-white shadow-sm">
+                        <p class="mb-1 text-muted small">Jūsų naujas finansų asistentas</p>
+                        <h2 class="h4 fw-bold">Greita, aiški ir profesionali sąskaitų apžvalga.</h2>
+                    </div>
+                </div>
             </div>
-            
-            <div class="input-group">
-                <label>Suma <i class="fas fa-info-circle tooltip"><span class="tooltiptext">Sąskaitos suma prieš mokesčius (Bruto).</span></i></label>
-                <input type="number" id="amount" placeholder="0.00" required>
+        </section>
+
+        <div class="row g-4">
+            <div class="col-xl-4">
+                <section class="card dashboard-card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="card-title mb-4">Pridėti naują sąskaitą</h3>
+                        <form id="invoiceForm" class="row g-3">
+                            <div class="col-12">
+                                <label for="client" class="form-label">Klientas <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Įmonės arba asmens, kuriam išrašėte sąskaitą, pavadinimas."></i></label>
+                                <input type="text" id="client" class="form-control shadow-sm" placeholder="Pvz. UAB „Pavyzdys“" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="amount" class="form-label">Suma <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Sąskaitos suma prieš mokesčius (Bruto)."></i></label>
+                                <input type="number" id="amount" class="form-control shadow-sm" placeholder="0.00" min="0" step="0.01" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="date" class="form-label">Data <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Sąskaitos išrašymo data."></i></label>
+                                <input type="date" id="date" class="form-control shadow-sm" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="accordion" id="advancedAccordion">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedSettings" aria-expanded="false" aria-controls="advancedSettings">
+                                                Išplėstiniai mokesčių nustatymai
+                                            </button>
+                                        </h2>
+                                        <div id="advancedSettings" class="accordion-collapse collapse" data-bs-parent="#advancedAccordion">
+                                            <div class="accordion-body">
+                                                <div class="row g-3">
+                                                    <div class="col-12">
+                                                        <label for="expenseDeduction" class="form-label">Išlaidų atskaitymas (%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Standartinis 30% išlaidų atskaitymas Lietuvoje."></i></label>
+                                                        <input type="number" id="expenseDeduction" class="form-control shadow-sm" placeholder="30" min="0" max="100" step="0.01" value="30">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label for="vsdPercent" class="form-label">VSD (%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Valstybinio socialinio draudimo tarifas."></i></label>
+                                                        <input type="number" id="vsdPercent" class="form-control shadow-sm" placeholder="9" min="0" max="100" step="0.01" value="9">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label for="psdPercent" class="form-label">PSD (%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Privalomojo sveikatos draudimo tarifas."></i></label>
+                                                        <input type="number" id="psdPercent" class="form-control shadow-sm" placeholder="6.98" min="0" max="100" step="0.01" value="6.98">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary w-100 py-2">Pridėti sąskaitą</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
             </div>
 
-            <div class="input-group">
-                <label>Data <i class="fas fa-info-circle tooltip"><span class="tooltiptext">Sąskaitos išrašymo data.</span></i></label>
-                <input type="date" id="date" required>
+            <div class="col-xl-8">
+                <section class="card dashboard-card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+                            <div>
+                                <h3 class="card-title mb-1">Sąskaitų istorija</h3>
+                                <p class="text-muted mb-0">Greita apžvalga su skaičiavimais ir trynimo galimybe neteisingai įvestiems įrašams.</p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="invoiceTable" class="table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Klientas</th>
+                                        <th>Suma (€)</th>
+                                        <th>Data</th>
+                                        <th class="tax-col">Mokesčiai (GPM 15%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Automatiškai apskaičiuotas 15% pajamų mokestis."></i></th>
+                                        <th class="net-col">Likutis į rankas (€) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Suma į rankas po visų mokesčių atskaitymo."></i></th>
+                                        <th class="text-end">Veiksmai</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card dashboard-card shadow-sm mt-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h3 class="card-title mb-1">Mėnesio pajamos</h3>
+                                <p class="text-muted small mb-0">Vizualizacija rodo bruto pajamas ir likutį į rankas po mokesčių.</p>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="incomeChart"></canvas>
+                        </div>
+                    </div>
+                </section>
             </div>
+        </div>
+    </main>
 
-            <button type="submit" class="btn-primary">Pridėti sąskaitą</button>
-        </form>
-    </section>
-
-    <section class="table-card">
-        <h3>Sąskaitų istorija</h3>
-        <table id="invoiceTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Klientas</th>
-                    <th>Suma (€)</th>
-                    <th>Data</th>
-                    <th class="tax-col">Mokesčiai (GPM 15%) <i class="fas fa-info-circle tooltip"><span class="tooltiptext">Automatiškai apskaičiuotas pajamų mokestis.</span></i></th>
-                </tr>
-            </thead>
-            <tbody>
-                </tbody>
-        </table>
-    </section>
-</main>
-
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
