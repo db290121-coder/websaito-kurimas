@@ -45,8 +45,45 @@ function showToast(message, type = 'success', duration = 3000) {
     }, duration);
 }
 
+function calculateTaxValues(invoice) {
+    const amount = Number(invoice.amount || 0);
+    const expenseDeductionPercent = Number(invoice.expense_deduction_percent ?? invoice.expenseDeductionPercent ?? 30);
+    const vsdPercent = Number(invoice.vsd_percent ?? invoice.vsdPercent ?? 9);
+    const psdPercent = Number(invoice.psd_percent ?? invoice.psdPercent ?? 6.98);
+
+    const expenseDeduction = amount * (expenseDeductionPercent / 100);
+    const taxBase = Math.max(amount - expenseDeduction, 0);
+    const gpm = taxBase * 0.15;
+    const vsd = amount * (vsdPercent / 100);
+    const psd = amount * (psdPercent / 100);
+    const totalTax = gpm + vsd + psd;
+    const netIncome = amount - totalTax;
+
+    return {
+        amount,
+        expenseDeduction,
+        gpm,
+        vsd,
+        psd,
+        totalTax,
+        netIncome
+    };
+}
+
+function normalizeInvoice(invoice) {
+    const finances = calculateTaxValues(invoice);
+    return {
+        ...invoice,
+        calculated_tax: finances.totalTax,
+        calculated_net_income: finances.netIncome,
+        calculated_gpm: finances.gpm,
+        calculated_vsd: finances.vsd,
+        calculated_psd: finances.psd
+    };
+}
+
 function updateStatistics(invoices) {
-    if (invoices.length === 0) {
+    if (!invoices.length) {
         document.getElementById('statsContainer').style.display = 'none';
         return;
     }
@@ -58,9 +95,9 @@ function updateStatistics(invoices) {
     let totalNet = 0;
 
     invoices.forEach(invoice => {
-        totalAmount += parseFloat(invoice.amount || 0);
-        totalTax += parseFloat(invoice.tax_paid || 0);
-        totalNet += parseFloat(invoice.net_income || 0);
+        totalAmount += invoice.amount;
+        totalTax += invoice.calculated_tax;
+        totalNet += invoice.calculated_net_income;
     });
 
     document.getElementById('totalAmount').textContent = '€ ' + totalAmount.toFixed(2);
@@ -73,24 +110,25 @@ function refreshDashboard() {
     return fetch('/api/invoices')
         .then(response => response.json())
         .then(data => {
+            const normalizedInvoices = data.map(normalizeInvoice);
             const tbody = document.querySelector('#invoiceTable tbody');
             tbody.innerHTML = '';
 
-            updateStatistics(data);
+            updateStatistics(normalizedInvoices);
 
-            if (!data.length) {
+            if (!normalizedInvoices.length) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> Dar nėra įvestų sąskaitų. Pradėkite nuo formos viršuje!</td></tr>';
             } else {
-                data.forEach((invoice, index) => {
+                normalizedInvoices.forEach((invoice, index) => {
                     const row = document.createElement('tr');
                     row.style.animationDelay = `${index * 50}ms`;
                     row.innerHTML = `
-                        <td class="text-secondary small"><strong>#${invoice.id}</strong></td>
-                        <td class="small">${invoice.client_name}</td>
-                        <td class="small"><strong>€ ${parseFloat(invoice.amount).toFixed(2)}</strong></td>
-                        <td class="small">${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
-                        <td class="tax-highlight small">€ ${parseFloat(invoice.tax_paid).toFixed(2)}</td>
-                        <td class="net-highlight small">€ ${parseFloat(invoice.net_income || 0).toFixed(2)}</td>
+                        <td>#${invoice.id}</td>
+                        <td>${invoice.client_name}</td>
+                        <td>€ ${invoice.amount.toFixed(2)}</td>
+                        <td>${invoice.date}</td>
+                        <td>€ ${invoice.calculated_tax.toFixed(2)}</td>
+                        <td>€ ${invoice.calculated_net_income.toFixed(2)}</td>
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
                                 <i class="fa-solid fa-trash"></i>
@@ -107,7 +145,7 @@ function refreshDashboard() {
                 });
             });
 
-            renderInvoiceChart(data);
+            renderInvoiceChart(normalizedInvoices);
         })
         .catch(error => {
             console.error('Error loading invoices:', error);
@@ -219,18 +257,18 @@ function renderInvoiceChart(invoices) {
         if (!year || !month) return acc;
         const key = `${year}-${month}`;
         if (!acc[key]) acc[key] = { bruto: 0, neto: 0, taxes: 0 };
-        acc[key].bruto += parseFloat(invoice.amount || 0);
-        acc[key].neto += parseFloat(invoice.net_income || 0);
-        acc[key].taxes += parseFloat(invoice.amount || 0) - parseFloat(invoice.net_income || 0);
+        acc[key].bruto += invoice.amount;
+        acc[key].neto += invoice.calculated_net_income;
+        acc[key].taxes += invoice.calculated_tax;
         return acc;
     }, {});
 
     const sortedKeys = Object.keys(monthlyData).sort();
     const labels = sortedKeys.map(key => {
         const [year, month] = key.split('-');
-        const monthNames = ['Sausis', 'Vasaris', 'Kovas', 'Balandis', 'Gegužė', 'Birželis', 
-                          'Liepa', 'Rugpjūtis', 'Rugsėjis', 'Spalis', 'Lapkritis', 'Gruodis'];
-        return `${monthNames[parseInt(month) - 1]} ${year}`;
+        const monthNames = ['Sausis', 'Vasaris', 'Kovas', 'Balandis', 'Gegužė', 'Birželis',
+            'Liepa', 'Rugpjūtis', 'Rugsėjis', 'Spalis', 'Lapkritis', 'Gruodis'];
+        return `${monthNames[parseInt(month, 10) - 1]} ${year}`;
     });
     const brutoTotals = sortedKeys.map(key => Number(monthlyData[key].bruto.toFixed(2)));
     const netoTotals = sortedKeys.map(key => Number(monthlyData[key].neto.toFixed(2)));

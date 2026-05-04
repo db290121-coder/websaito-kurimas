@@ -8,122 +8,121 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="bg-light">
     <div id="toastContainer" class="toast-container"></div>
-    
     <main class="container py-5" style="max-width: 1400px;">
-        <section class="landing-card p-4 p-lg-5 rounded-4 shadow-sm mb-5">
-            <div class="row align-items-center gy-4">
-                <div class="col-lg-8">
-                    <span class="eyebrow text-uppercase text-primary fw-semibold">
-                        <i class="fa-solid fa-chart-pie"></i> Freelancer Dashboard
-                    </span>
-                    <h1 class="display-5 mt-3 fw-bold">Sveiki atvykę į Freelancer Invoices</h1>
-                    <p class="lead text-muted mb-4" style="font-weight: 500;">Paprastą įrankį jūsų pajamoms sekti ir mokesčiams skaičiuoti. Pridėkite sąskaitas, stebėkite automatinį GPM skaičiavimą ir greitai tvarkykite finansus visame įrenginyje.</p>
-                    <div class="d-flex flex-wrap gap-3">
-                        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary py-2 px-3">
-                            <i class="fa-solid fa-mobile-screen"></i> Mobiliems pritaikytas
-                        </span>
-                        <span class="badge rounded-pill bg-success bg-opacity-10 text-success py-2 px-3">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Intuityvus valdymas
-                        </span>
-                        <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning py-2 px-3">
-                            <i class="fa-solid fa-calculator"></i> Automatiniai mokesčiai
-                        </span>
+        <div class="row">
+            <div class="col-12">
+                <section class="landing-card p-4 p-lg-5 rounded-4 shadow-sm mb-5">
+                    <div class="row align-items-center gy-4">
+                        <div class="col-lg-8">
+                            <span class="eyebrow text-uppercase text-primary fw-semibold">
+                                <i class="fa-solid fa-chart-pie"></i> Freelancer Dashboard
+                            </span>
+                            <h1 class="display-5 mt-3 fw-bold">Sveiki atvykę į Freelancer Invoices</h1>
+                            <p class="lead text-muted mb-4" style="font-weight: 500;">Paprastą įrankį jūsų pajamoms sekti ir mokesčiams skaičiuoti. Pridėkite sąskaitas, stebėkite automatinį GPM skaičiavimą ir greitai tvarkykite finansus visame įrenginyje.</p>
+                            <div class="d-flex flex-wrap gap-3">
+                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary py-2 px-3">
+                                    <i class="fa-solid fa-mobile-screen"></i> Mobiliems pritaikytas
+                                </span>
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success py-2 px-3">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Intuityvus valdymas
+                                </span>
+                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning py-2 px-3">
+                                    <i class="fa-solid fa-calculator"></i> Automatiniai mokesčiai
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 text-lg-end d-none d-lg-block">
+                            <div class="landing-visual p-5 rounded-4 bg-white shadow-sm">
+                                <p class="mb-1 text-muted small fw-600">🚀 Jūsų naujas finansų asistentas</p>
+                                <h2 class="h5 fw-bold mt-3">Greita, aiški ir profesionali sąskaitų apžvalga.</h2>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-lg-4 text-lg-end d-none d-lg-block">
-                    <div class="landing-visual p-5 rounded-4 bg-white shadow-sm">
-                        <p class="mb-1 text-muted small fw-600">🚀 Jūsų naujas finansų asistentas</p>
-                        <h2 class="h5 fw-bold mt-3">Greita, aiški ir profesionali sąskaitų apžvalga.</h2>
-                    </div>
-                </div>
+                </section>
             </div>
-        </section>
-
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4 mb-4" id="statsContainer" style="display: none;">
-            <div class="col">
-                <div class="stat-card">
-                    <div class="stat-label">Bendra suma (€)</div>
-                    <div class="stat-value" id="totalAmount">0.00</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="stat-card">
-                    <div class="stat-label">Mokesčiai (€)</div>
-                    <div class="stat-value" id="totalTax" style="color: var(--warning);">0.00</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="stat-card">
-                    <div class="stat-label">Likutis į rankas (€)</div>
-                    <div class="stat-value" id="totalNet" style="color: var(--success);">0.00</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="stat-card">
-                    <div class="stat-label">Sąskaitų skaičius</div>
-                    <div class="stat-value" id="totalCount" style="color: var(--primary);">0</div>
-                </div>
-            </div>
-        </div>
 
         <div class="row g-4">
+            <!-- 1. STATISTIKOS BLOKAS (Per visą plotį viršuje) -->
+            <div class="col-12 mb-4">
+                <div id="statsContainer">
+                    <div class="stat-card">
+                        <div class="stat-label">Bendra suma (€)</div>
+                        <div class="stat-value" id="totalAmount">0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Mokesčiai (€)</div>
+                        <div class="stat-value" id="totalTax" style="color: var(--warning);">0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Likutis į rankas (€)</div>
+                        <div class="stat-value" id="totalNet" style="color: var(--success);">0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Sąskaitų skaičius</div>
+                        <div class="stat-value" id="totalCount" style="color: var(--primary);">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. PAGRINDINIS TURINYS (Kairė: Forma | Dešinė: Lentelė ir Grafikas) -->
             <div class="col-lg-4">
-                <section class="card dashboard-card h-100 shadow-sm">
-                    <div class="card-body">
+                <section class="card dashboard-card form-card shadow-sm h-100">
+                    <div class="card-body d-flex flex-column">
                         <h3 class="card-title mb-1">
                             <i class="fa-solid fa-file-invoice"></i> Pridėti naują sąskaitą
                         </h3>
                         <p class="text-muted small mb-4">Greitai užpildykite formą ir stebėkite automatinį mokesčių skaičiavimą</p>
-                        <form id="invoiceForm" class="row g-3">
+                        
+                        <form id="invoiceForm" class="row g-3 flex-grow-1">
                             <div class="col-12">
                                 <label for="client" class="form-label">
                                     <i class="fa-solid fa-user-tie"></i> Klientas
-                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Įmonės arba asmens, kuriam išrašėte sąskaitą, pavadinimas."></i>
+                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" title="Įmonės ar asmens pavadinimas."></i>
                                 </label>
-                                <input type="text" id="client" class="form-control shadow-sm" placeholder="pvz. UAB „Pavyzdys"" required>
+                                <input type="text" id="client" class="form-control shadow-sm" placeholder="pvz. UAB „Pavyzdys“" required>
                             </div>
                             <div class="col-12">
                                 <label for="amount" class="form-label">
                                     <i class="fa-solid fa-euro-sign"></i> Suma
-                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Sąskaitos suma prieš mokesčius (Bruto)."></i>
+                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" title="Suma prieš mokesčius."></i>
                                 </label>
                                 <input type="number" id="amount" class="form-control shadow-sm" placeholder="0.00" min="0" step="0.01" required>
                             </div>
                             <div class="col-12">
                                 <label for="date" class="form-label">
                                     <i class="fa-solid fa-calendar"></i> Data
-                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Sąskaitos išrašymo data."></i>
                                 </label>
                                 <input type="date" id="date" class="form-control shadow-sm" required>
                             </div>
                             
+                            <!-- Išplėstiniai nustatymai -->
                             <div class="col-12">
                                 <div class="accordion" id="advancedAccordion">
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedSettings" aria-expanded="false" aria-controls="advancedSettings">
-                                                <i class="fa-solid fa-sliders"></i> Išplėstiniai mokesčių nustatymai
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedSettings">
+                                                <i class="fa-solid fa-sliders"></i> Mokesčių nustatymai
                                             </button>
                                         </h2>
                                         <div id="advancedSettings" class="accordion-collapse collapse" data-bs-parent="#advancedAccordion">
                                             <div class="accordion-body">
                                                 <div class="row g-3">
                                                     <div class="col-12">
-                                                        <label for="expenseDeduction" class="form-label">Išlaidų atskaitymas (%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Standartinis 30% išlaidų atskaitymas Lietuvoje."></i></label>
-                                                        <input type="number" id="expenseDeduction" class="form-control shadow-sm" placeholder="30" min="0" max="100" step="0.01" value="30">
+                                                        <label class="form-label small">Išlaidų atskaitymas (%)</label>
+                                                        <input type="number" id="expenseDeduction" class="form-control form-control-sm" value="30">
                                                     </div>
                                                     <div class="col-6">
-                                                        <label for="vsdPercent" class="form-label">VSD (%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Valstybinio socialinio draudimo tarifas."></i></label>
-                                                        <input type="number" id="vsdPercent" class="form-control shadow-sm" placeholder="9" min="0" max="100" step="0.01" value="9">
+                                                        <label class="form-label small">VSD (%)</label>
+                                                        <input type="number" id="vsdPercent" class="form-control form-control-sm" value="9">
                                                     </div>
                                                     <div class="col-6">
-                                                        <label for="psdPercent" class="form-label">PSD (%) <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Privalomojo sveikatos draudimo tarifas."></i></label>
-                                                        <input type="number" id="psdPercent" class="form-control shadow-sm" placeholder="6.98" min="0" max="100" step="0.01" value="6.98">
+                                                        <label class="form-label small">PSD (%)</label>
+                                                        <input type="number" id="psdPercent" class="form-control form-control-sm" value="6.98">
                                                     </div>
                                                 </div>
                                             </div>
@@ -131,8 +130,8 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="col-12">
+
+                            <div class="col-12 mt-auto pt-3">
                                 <button type="submit" class="btn btn-primary w-100 py-3" id="submitBtn">
                                     <i class="fa-solid fa-plus"></i> Pridėti sąskaitą
                                 </button>
@@ -142,56 +141,51 @@
                 </section>
             </div>
 
+            <!-- Dešinė pusė -->
             <div class="col-lg-8">
-                <section class="card dashboard-card shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
-                            <div>
-                                <h3 class="card-title mb-1">
-                                    <i class="fa-solid fa-table"></i> Sąskaitų istorija
-                                </h3>
-                                <p class="text-muted mb-0">Greita apžvalga su skaičiavimais ir trynimo galimybe neteisingai įvestiems įrašams.</p>
+                <div class="row g-4">
+                    <!-- Istorija -->
+                    <div class="col-12">
+                        <section class="card dashboard-card shadow-sm">
+                            <div class="card-body">
+                                <h3 class="card-title mb-1"><i class="fa-solid fa-table"></i> Sąskaitų istorija</h3>
+                                <p class="text-muted small mb-4">Paskutinių įrašų apžvalga</p>
+                                <div class="table-responsive">
+                                    <table id="invoiceTable" class="table align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Klientas</th>
+                                                <th>Suma</th>
+                                                <th>Data</th>
+                                                <th class="tax-col">Mokesčiai</th>
+                                                <th class="net-col">Likutis</th>
+                                                <th class="text-end">Veiksmai</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
-                        <div class="table-responsive-lg">
-                            <table id="invoiceTable" class="table align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th><i class="fa-solid fa-hashtag"></i> ID</th>
-                                        <th><i class="fa-solid fa-user-tie"></i> Klientas</th>
-                                        <th><i class="fa-solid fa-euro-sign"></i> Suma</th>
-                                        <th><i class="fa-solid fa-calendar"></i> Data</th>
-                                        <th class="tax-col"><i class="fa-solid fa-percent"></i> Mokesčiai <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Automatiškai apskaičiuotas 15% pajamų mokestis."></i></th>
-                                        <th class="net-col"><i class="fa-solid fa-wallet"></i> Likutis <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Suma į rankas po visų mokesčių atskaitymo."></i></th>
-                                        <th class="text-end"><i class="fa-solid fa-cog"></i> Veiksmai</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
+                        </section>
                     </div>
-                </section>
-
-                <section class="card dashboard-card shadow-sm mt-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h3 class="card-title mb-1">
-                                    <i class="fa-solid fa-chart-column"></i> Mėnesio pajamos
-                                </h3>
-                                <p class="text-muted small mb-0">Vizualizacija rodo bruto pajamas ir likutį į rankas po mokesčių.</p>
+                    <!-- Grafikas -->
+                    <div class="col-12">
+                        <section class="card dashboard-card shadow-sm">
+                            <div class="card-body">
+                                <h3 class="card-title mb-3"><i class="fa-solid fa-chart-column"></i> Mėnesio pajamos</h3>
+                                <div class="chart-container" style="position: relative; height:300px;">
+                                    <canvas id="incomeChart"></canvas>
+                                </div>
                             </div>
-                        </div>
-                        <div class="chart-container" style="height: 350px; position: relative;">
-                            <canvas id="incomeChart"></canvas>
-                        </div>
+                        </section>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

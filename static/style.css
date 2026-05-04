@@ -72,13 +72,14 @@ body::before {
 }
 
 .dashboard-card {
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.9);
     border: 1.5px solid var(--border);
     border-radius: 1.5rem;
     box-shadow: var(--shadow-sm);
     animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     animation-delay: 0.1s;
     animation-fill-mode: both;
+    backdrop-filter: blur(10px);
 }
 
 .dashboard-card:hover {
@@ -251,6 +252,7 @@ body::before {
     vertical-align: middle;
     border: none;
     padding: 1rem 0.9rem;
+    white-space: nowrap;
 }
 
 .tax-col {
@@ -269,7 +271,9 @@ body::before {
     background: rgba(217, 70, 239, 0.08);
     padding: 0.4rem 0.75rem;
     border-radius: 0.6rem;
-    display: inline-block;
+    display: block;
+    width: 100%;
+    white-space: nowrap;
 }
 
 .net-highlight {
@@ -278,15 +282,21 @@ body::before {
     background: rgba(22, 163, 74, 0.08);
     padding: 0.4rem 0.75rem;
     border-radius: 0.6rem;
-    display: inline-block;
+    display: block;
+    width: 100%;
+    white-space: nowrap;
 }
 
 .chart-container {
-    height: 350px;
+    min-height: 400px;
     position: relative;
     background: white;
     border-radius: 0.75rem;
     overflow: hidden;
+}
+
+.form-card {
+    height: 100%;
 }
 
 .accordion-button {
@@ -342,6 +352,15 @@ body::before {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+/* Statistics container - horizontal layout */
+#statsContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    width: 100%;
 }
 
 .badge {
@@ -470,5 +489,71 @@ body::before {
 
     .stat-card {
         margin-bottom: 1rem;
+    }
+
+    /* Jei naudojate Bootstrap, užtikrinkite, kad formos ir lentelės sekcija būtų lygiavertė */
+    .main-content-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr; /* Forma kairėje (siauresnė), lentelė dešinėje */
+        gap: 2rem;
+        align-items: start;
+    }
+
+    /* Kortelių vidaus lygiavimas */
+    .stat-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 120px; /* Suvienodiname aukštį */
+    }
+
+    /* Patobuliname lentelę, kad ji neužimtų per daug vietos mažame ekrane */
+    .table-responsive {
+        border-radius: 1.5rem;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+
+    @media (max-width: 992px) {
+        .main-content-grid {
+            grid-template-columns: 1fr !important; /* Viskas į vieną stulpelį */
+        }
+    }
+
+    /* Tik telefonams (iki 768px) */
+    @media (max-width: 768px) {
+        .landing-card { padding: 1.5rem 1.25rem; }
+        .dashboard-card { border-radius: 1.25rem; }
+        .chart-container { height: 280px; }
+        .table { font-size: 0.8rem; }
+        .table td, .table th { padding: 0.75rem 0.5rem; white-space: nowrap; }
+        
+        #statsContainer {
+            grid-template-columns: 1fr; /* Telefonuose statistika vienas po kitu */
+        }
+    }
+
+    /* --- 2. HORIZONTALUS STATISTIKOS IŠDĖSTYMAS (Desktop) --- */
+    #statsContainer {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); /* 4 lygios skiltys horizontaliai */
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+        width: 100%;
+    }
+
+    /* --- 3. FORMA IR LENTELĖ ŠALIA (Desktop) --- */
+    .main-content-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr; /* Forma fiksuoto pločio, lentelė užima likusią vietą */
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .stat-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 120px;
     }
 }
