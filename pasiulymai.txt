@@ -10,3 +10,5 @@ Lentelė: table-responsive-lg užtikrina, kad tik mobiliame būtų responsive, o
 Chart: Tvirtas height: 350px ir position: relative užtikrina stabilumą.
 
 Mobile: Pridėta white-space: nowrap lentelės ląstelėms ir margin-bottom statistikos kortelėms.
+
+pkill -f "python app.py" || true

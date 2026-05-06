@@ -1,4 +1,6 @@
 let incomeChart;
+const STORAGE_KEY = 'invoices_cache';
+const STORAGE_TIMESTAMP = 'invoices_timestamp';
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
@@ -19,7 +21,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load initial data
     refreshDashboard();
+
+    // Setup tooltips
+    setupTooltips();
 });
+
+function setupTooltips() {
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(el => {
+        if (!bootstrap.Tooltip.getInstance(el)) {
+            new bootstrap.Tooltip(el);
+        }
+    });
+}
 
 function showToast(message, type = 'success', duration = 3000) {
     const container = document.getElementById('toastContainer');
@@ -82,6 +96,25 @@ function normalizeInvoice(invoice) {
     };
 }
 
+function saveToLocalStorage(invoices) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+        localStorage.setItem(STORAGE_TIMESTAMP, new Date().toISOString());
+    } catch (e) {
+        console.warn('localStorage save failed:', e);
+    }
+}
+
+function getFromLocalStorage() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        console.warn('localStorage read failed:', e);
+        return null;
+    }
+}
+
 function updateStatistics(invoices) {
     if (!invoices.length) {
         document.getElementById('statsContainer').style.display = 'none';
@@ -106,32 +139,122 @@ function updateStatistics(invoices) {
     document.getElementById('totalCount').textContent = invoices.length;
 }
 
+function updateSummary(invoices) {
+    if (!invoices.length) {
+        document.getElementById('summaryCard').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('summaryCard').style.display = 'block';
+
+    let totalGPM = 0;
+    let totalVSD = 0;
+    let totalPSD = 0;
+    let totalAmount = 0;
+
+    invoices.forEach(invoice => {
+        totalGPM += invoice.calculated_gpm;
+        totalVSD += invoice.calculated_vsd;
+        totalPSD += invoice.calculated_psd;
+        totalAmount += invoice.amount;
+    });
+
+    const avgGPMPercent = totalAmount > 0 ? ((totalGPM / totalAmount) * 100) : 0;
+
+    document.getElementById('summaryGPM').textContent = '€ ' + totalGPM.toFixed(2);
+    document.getElementById('summaryGPMPercent').textContent = avgGPMPercent.toFixed(2) + ' %';
+    document.getElementById('summaryVSD').textContent = '€ ' + totalVSD.toFixed(2);
+    document.getElementById('summaryPSD').textContent = '€ ' + totalPSD.toFixed(2);
+}
+
+function downloadPDF(invoice) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(20);
+    doc.text('Sąskaita', 20, 20);
+    
+    // Details
+    doc.setFontSize(11);
+    let yPos = 40;
+    
+    const details = [
+        ['Sąskaitos ID:', `#${invoice.id}`],
+        ['Klientas:', invoice.client_name],
+        ['Data:', invoice.date],
+        ['Suma (Bruto):', `€ ${invoice.amount.toFixed(2)}`],
+        ['Mokesčiai:', `€ ${invoice.calculated_tax.toFixed(2)}`],
+        ['Likutis į rankas:', `€ ${invoice.calculated_net_income.toFixed(2)}`]
+    ];
+    
+    details.forEach(([label, value]) => {
+        doc.text(label, 20, yPos);
+        doc.text(value, 100, yPos);
+        yPos += 8;
+    });
+    
+    // Breakdown
+    yPos += 10;
+    doc.setFontSize(12);
+    doc.text('Mokesčių skaičiavimai:', 20, yPos);
+    
+    yPos += 8;
+    doc.setFontSize(10);
+    const breakdown = [
+        [`GPM (15%):`, `€ ${invoice.calculated_gpm.toFixed(2)}`],
+        [`VSD:`, `€ ${invoice.calculated_vsd.toFixed(2)}`],
+        [`PSD:`, `€ ${invoice.calculated_psd.toFixed(2)}`]
+    ];
+    
+    breakdown.forEach(([label, value]) => {
+        doc.text(label, 20, yPos);
+        doc.text(value, 100, yPos);
+        yPos += 8;
+    });
+    
+    const filename = `Saskaitа_${invoice.id}_${invoice.date}.pdf`;
+    doc.save(filename);
+    showToast(`📄 PDF sėkmingai atsisiųstas!`, 'success');
+}
+
 function refreshDashboard() {
     return fetch('/api/invoices')
         .then(response => response.json())
         .then(data => {
             const normalizedInvoices = data.map(normalizeInvoice);
+            
+            // Save to localStorage
+            saveToLocalStorage(normalizedInvoices);
+            
             const tbody = document.querySelector('#invoiceTable tbody');
             tbody.innerHTML = '';
 
             updateStatistics(normalizedInvoices);
+            updateSummary(normalizedInvoices);
 
             if (!normalizedInvoices.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> Dar nėra įvestų sąskaitų. Pradėkite nuo formos viršuje!</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> Dar nėra įvestų sąskaitų. Pradėkite nuo formos viršuje!</td></tr>';
             } else {
                 normalizedInvoices.forEach((invoice, index) => {
                     const row = document.createElement('tr');
-                    row.style.animationDelay = `${index * 50}ms`;
+                    row.className = 'fade-in-row';
+                    row.style.animationDelay = `${index * 80}ms`;
                     row.innerHTML = `
-                        <td>#${invoice.id}</td>
+                        <td><strong>#${invoice.id}</strong></td>
                         <td>${invoice.client_name}</td>
-                        <td>€ ${invoice.amount.toFixed(2)}</td>
-                        <td>${invoice.date}</td>
-                        <td>€ ${invoice.calculated_tax.toFixed(2)}</td>
-                        <td>€ ${invoice.calculated_net_income.toFixed(2)}</td>
+                        <td><strong>€ ${invoice.amount.toFixed(2)}</strong></td>
+                        <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
+                        <td class="tax-highlight">€ ${invoice.calculated_tax.toFixed(2)}</td>
+                        <td class="net-highlight">€ ${invoice.calculated_net_income.toFixed(2)}</td>
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
                                 <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice).replace(/'/g, "&apos;")}' title="Atsisiųsti PDF">
+                                <i class="fa-solid fa-file-pdf"></i>
                             </button>
                         </td>
                     `;
@@ -145,7 +268,15 @@ function refreshDashboard() {
                 });
             });
 
+            document.querySelectorAll('.download-pdf-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const invoice = JSON.parse(this.getAttribute('data-invoice'));
+                    downloadPDF(invoice);
+                });
+            });
+
             renderInvoiceChart(normalizedInvoices);
+            setupTooltips();
         })
         .catch(error => {
             console.error('Error loading invoices:', error);
