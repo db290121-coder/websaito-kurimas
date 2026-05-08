@@ -1,36 +1,36 @@
 # Freelancer Invoices App
 
-A full-stack web application for freelancers to track income and automatically calculate taxes.
+Pilnai apdorojama žiniatinklio programa laisvai samdomiems darbuotojams, skirta pajamoms stebėti ir mokesčiams automatiškai apskaičiuoti.
 
-## Tech Stack
-- Backend: Python with Flask
-- Frontend: HTML, CSS, JavaScript
-- Database: SQLite
+## Technologijų paketas
+- Backend'as: Python su „Flask“
+- Frontend'as: HTML, CSS, JavaScript
+- Duomenų bazė: SQLite
 
-## Features
-- Add new invoices with client name, amount, and date
-- Automatic tax calculation (15% GPM)
-- View all invoices in a table
-- Real-time updates without page reload
+## Funkcijos
+- Pridėti naujas sąskaitas faktūras su kliento vardu, suma ir data
+- Automatinis mokesčių skaičiavimas (15 % GPM)
+- Peržiūrėti visas sąskaitas faktūras lentelėje
+- Atnaujinimai realiuoju laiku neperkraunant puslapio
 
-## Setup and Run
+## Nustatyti ir paleisti
 
-1. Install dependencies:
+1. Įdiegti bibliotekas:
    ```
    pip install -r requirements.txt
    ```
 
-2. Run the application:
+2. Paleisti programą:
    ```
    python app.py
    ```
 
-3. Open your browser and go to `http://127.0.0.1:5000`
+3. Atidarykite naršyklę ir eikite į `http://127.0.0.1:5000`
 
-## Project Structure
-- `app.py`: Main Flask application
-- `templates/index.html`: Main HTML page
-- `static/style.css`: Stylesheet
-- `static/script.js`: Client-side JavaScript
-- `invoices.db`: SQLite database
-- `requirements.txt`: Python dependencies
+## Projekto struktūra
+- `app.py`: Pagrindinė „Flask“ programa
+- `templates/index.html`: Pagrindinis HTML puslapis
+- `static/style.css`: Stilių lapas
+- `static/script.js`: Kliento pusės „JavaScript“
+- `invoices.db`: SQLite duomenų bazė
+- `requirements.txt`: Python priklausomybės
