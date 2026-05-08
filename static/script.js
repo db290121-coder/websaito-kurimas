@@ -65,12 +65,22 @@ function calculateTaxValues(invoice) {
     const vsdPercent = Number(invoice.vsd_percent ?? invoice.vsdPercent ?? 9);
     const psdPercent = Number(invoice.psd_percent ?? invoice.psdPercent ?? 6.98);
 
+    // Expense deduction (30% of gross amount)
     const expenseDeduction = amount * (expenseDeductionPercent / 100);
-    const taxBase = Math.max(amount - expenseDeduction, 0);
+    const taxBase = amount - expenseDeduction;
+    
+    // GPM 15% on full tax base (after expense deduction)
     const gpm = taxBase * 0.15;
-    const vsd = amount * (vsdPercent / 100);
-    const psd = amount * (psdPercent / 100);
+    
+    // VSD and PSD calculated on 90% of tax base
+    const vsdPsdBase = taxBase * 0.9;
+    const vsd = vsdPsdBase * (vsdPercent / 100);
+    const psd = vsdPsdBase * (psdPercent / 100);
+    
+    // Total tax
     const totalTax = gpm + vsd + psd;
+    
+    // Net income = gross amount - total taxes
     const netIncome = amount - totalTax;
 
     return {
@@ -234,32 +244,32 @@ function refreshDashboard() {
             updateSummary(normalizedInvoices);
 
             if (!normalizedInvoices.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> Dar nėra įvestų sąskaitų. Pradėkite nuo formos viršuje!</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> No invoices found. Start by adding an invoice using the form above!</td></tr>';
             } else {
+                let rowsHtml = '';
                 normalizedInvoices.forEach((invoice, index) => {
-                    const row = document.createElement('tr');
-                    row.className = 'fade-in-row';
-                    row.style.animationDelay = `${index * 80}ms`;
-                    row.innerHTML = `
-                        <td><strong>#${invoice.id}</strong></td>
-                        <td>${invoice.client_name}</td>
-                        <td><strong>€ ${invoice.amount.toFixed(2)}</strong></td>
-                        <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
-                        <td class="tax-highlight">€ ${invoice.calculated_tax.toFixed(2)}</td>
-                        <td class="net-highlight">€ ${invoice.calculated_net_income.toFixed(2)}</td>
-                        <td class="text-end">
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice).replace(/'/g, "&apos;")}' title="Atsisiųsti PDF">
-                                <i class="fa-solid fa-file-pdf"></i>
-                            </button>
-                        </td>
+                    rowsHtml += `
+                        <tr class="fade-in-row" style="animation-delay: ${index * 80}ms;">
+                            <td><strong>#${invoice.id}</strong></td>
+                            <td>${invoice.client_name}</td>
+                            <td><strong>€ ${invoice.amount.toFixed(2)}</strong></td>
+                            <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
+                            <td class="tax-highlight">€ ${invoice.calculated_tax.toFixed(2)}</td>
+                            <td class="net-highlight">€ ${invoice.calculated_net_income.toFixed(2)}</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice).replace(/'/g, "&apos;")}' title="Atsisiųsti PDF">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                </button>
+                            </td>
+                        </tr>
                     `;
-                    tbody.appendChild(row);
                 });
+                tbody.innerHTML = rowsHtml;
             }
 
             document.querySelectorAll('.delete-btn').forEach(button => {

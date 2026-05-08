@@ -26,7 +26,10 @@ def init_db():
                 expense_deduction_percent REAL DEFAULT 30.0,
                 vsd_percent REAL DEFAULT 9.0,
                 psd_percent REAL DEFAULT 6.98,
-                net_income REAL NOT NULL
+                net_income REAL NOT NULL,
+                gpm REAL,
+                vsd REAL,
+                psd REAL
             )
         ''')
         # Add columns if they don't exist (for migration)
@@ -46,26 +49,43 @@ def init_db():
             conn.execute('ALTER TABLE invoices ADD COLUMN net_income REAL')
         except sqlite3.OperationalError:
             pass
+        try:
+            conn.execute('ALTER TABLE invoices ADD COLUMN gpm REAL')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE invoices ADD COLUMN vsd REAL')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE invoices ADD COLUMN psd REAL')
+        except sqlite3.OperationalError:
+            pass
 
 def calculate_finances(amount, expense_deduction_percent=30.0, vsd_percent=9.0, psd_percent=6.98):
-    # Expense deduction
+    # Expense deduction (30% of gross amount)
     expense_deduction = amount * (expense_deduction_percent / 100)
     tax_base = amount - expense_deduction
     
-    # GPM 15% on tax base
+    # GPM 15% on full tax base (after expense deduction)
     gpm = tax_base * 0.15
     
-    # VSD and PSD on gross amount
-    vsd = amount * (vsd_percent / 100)
-    psd = amount * (psd_percent / 100)
+    # VSD and PSD calculated on 90% of tax base
+    vsd_psd_base = tax_base * 0.9
+    vsd = vsd_psd_base * (vsd_percent / 100)
+    psd = vsd_psd_base * (psd_percent / 100)
     
-    # Net income = gross - all taxes
-    net_income = amount - gpm - vsd - psd
+    # Total tax
+    total_tax = gpm + vsd + psd
+    
+    # Net income = gross amount - total taxes
+    net_income = amount - total_tax
     
     return {
-        'tax_paid': gpm,
+        'tax_paid': total_tax,  # Changed to total tax instead of just GPM
         'net_income': net_income,
         'expense_deduction': expense_deduction,
+        'gpm': gpm,
         'vsd': vsd,
         'psd': psd
     }
@@ -88,12 +108,15 @@ def invoices():
         finances = calculate_finances(amount, expense_deduction_percent, vsd_percent, psd_percent)
         tax_paid = finances['tax_paid']
         net_income = finances['net_income']
+        gpm = finances['gpm']
+        vsd = finances['vsd']
+        psd = finances['psd']
         
         with get_db() as conn:
             conn.execute('''INSERT INTO invoices 
-                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income))
+                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd))
             conn.commit()
         
         return jsonify({'message': 'Invoice added successfully'}), 201
@@ -105,7 +128,7 @@ def invoices():
         result = []
         for row in invoices:
             invoice = dict(row)
-            if invoice.get('net_income') is None:
+            if invoice.get('net_income') is None or invoice.get('gpm') is None:
                 # Recalculate for old invoices
                 finances = calculate_finances(
                     invoice['amount'], 
@@ -114,6 +137,10 @@ def invoices():
                     invoice.get('psd_percent', 6.98)
                 )
                 invoice['net_income'] = finances['net_income']
+                invoice['tax_paid'] = finances['tax_paid']
+                invoice['gpm'] = finances['gpm']
+                invoice['vsd'] = finances['vsd']
+                invoice['psd'] = finances['psd']
                 # Optionally update DB, but for now just return
             result.append(invoice)
         return jsonify(result)
