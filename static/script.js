@@ -1,6 +1,8 @@
 let incomeChart;
 const STORAGE_KEY = 'invoices_cache';
 const STORAGE_TIMESTAMP = 'invoices_timestamp';
+let invoices = [];
+let nextId = 1;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
@@ -12,6 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set today's date by default
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
+
+    // Load initial data from localStorage
+    invoices = getFromLocalStorage() || [];
+    if (invoices.length > 0) {
+        nextId = Math.max(...invoices.map(inv => inv.id)) + 1;
+    }
 
     const form = document.getElementById('invoiceForm');
     form.addEventListener('submit', function(e) {
@@ -229,69 +237,61 @@ function downloadPDF(invoice) {
 }
 
 function refreshDashboard() {
-    return fetch('/api/invoices')
-        .then(response => response.json())
-        .then(data => {
-            const normalizedInvoices = data.map(normalizeInvoice);
-            
-            // Save to localStorage
-            saveToLocalStorage(normalizedInvoices);
-            
-            const tbody = document.querySelector('#invoiceTable tbody');
-            tbody.innerHTML = '';
+    const normalizedInvoices = invoices.map(normalizeInvoice);
+    
+    // Save to localStorage
+    saveToLocalStorage(normalizedInvoices);
+    
+    const tbody = document.querySelector('#invoiceTable tbody');
+    tbody.innerHTML = '';
 
-            updateStatistics(normalizedInvoices);
-            updateSummary(normalizedInvoices);
+    updateStatistics(normalizedInvoices);
+    updateSummary(normalizedInvoices);
 
-            if (!normalizedInvoices.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> No invoices found. Start by adding an invoice using the form above!</td></tr>';
-            } else {
-                let rowsHtml = '';
-                normalizedInvoices.forEach((invoice, index) => {
-                    rowsHtml += `
-                        <tr class="fade-in-row" style="animation-delay: ${index * 80}ms;">
-                            <td><strong>#${invoice.id}</strong></td>
-                            <td>${invoice.client_name}</td>
-                            <td><strong>€ ${invoice.amount.toFixed(2)}</strong></td>
-                            <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
-                            <td class="tax-highlight">€ ${invoice.calculated_tax.toFixed(2)}</td>
-                            <td class="net-highlight">€ ${invoice.calculated_net_income.toFixed(2)}</td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice).replace(/'/g, "&apos;")}' title="Atsisiųsti PDF">
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = rowsHtml;
-            }
-
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    deleteInvoice(this.dataset.id);
-                });
-            });
-
-            document.querySelectorAll('.download-pdf-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const invoice = JSON.parse(this.getAttribute('data-invoice'));
-                    downloadPDF(invoice);
-                });
-            });
-
-            renderInvoiceChart(normalizedInvoices);
-            setupTooltips();
-        })
-        .catch(error => {
-            console.error('Error loading invoices:', error);
-            showToast('Klaida kraunant sąskaitas. Pabandykite iš naujo.', 'error');
+    if (!normalizedInvoices.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> No invoices found. Start by adding an invoice using the form above!</td></tr>';
+    } else {
+        let rowsHtml = '';
+        normalizedInvoices.forEach((invoice, index) => {
+            rowsHtml += `
+                <tr class="fade-in-row" style="animation-delay: ${index * 80}ms;">
+                    <td><strong>#${invoice.id}</strong></td>
+                    <td>${invoice.client_name}</td>
+                    <td><strong>€ ${invoice.amount.toFixed(2)}</strong></td>
+                    <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
+                    <td class="tax-highlight">€ ${invoice.calculated_tax.toFixed(2)}</td>
+                    <td class="net-highlight">€ ${invoice.calculated_net_income.toFixed(2)}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice).replace(/'/g, "&apos;")}' title="Atsisiųsti PDF">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
         });
+        tbody.innerHTML = rowsHtml;
+    }
+
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            deleteInvoice(this.dataset.id);
+        });
+    });
+
+    document.querySelectorAll('.download-pdf-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const invoice = JSON.parse(this.getAttribute('data-invoice'));
+            downloadPDF(invoice);
+        });
+    });
+
+    renderInvoiceChart(normalizedInvoices);
+    setupTooltips();
 }
 
 function addInvoice() {
@@ -326,43 +326,38 @@ function addInvoice() {
     submitBtn.classList.add('loading-btn');
     submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pridedama...';
 
-    fetch('/api/invoices', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            client_name: client,
-            amount: parseFloat(amount),
-            date: date,
-            expense_deduction_percent: parseFloat(expenseDeduction),
-            vsd_percent: parseFloat(vsdPercent),
-            psd_percent: parseFloat(psdPercent)
-        })
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.json();
-    })
-    .then(() => {
-        document.getElementById('invoiceForm').reset();
-        
-        // Set today's date again
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('date').value = today;
-        
-        showToast('✨ Sąskaita sėkmingai pridėta!', 'success');
-        refreshDashboard();
-    })
-    .catch(error => {
-        console.error('Error adding invoice:', error);
-        showToast('Klaida pridedant sąskaitą. Pabandykite iš naujo.', 'error');
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('loading-btn');
-        submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Pridėti sąskaitą';
-    });
+    // Create invoice object
+    const newInvoice = {
+        id: nextId++,
+        client_name: client,
+        amount: parseFloat(amount),
+        date: date,
+        expense_deduction_percent: parseFloat(expenseDeduction),
+        vsd_percent: parseFloat(vsdPercent),
+        psd_percent: parseFloat(psdPercent)
+    };
+
+    // Add to local array
+    invoices.push(newInvoice);
+
+    // Save to localStorage
+    saveToLocalStorage(invoices);
+
+    // Reset form
+    document.getElementById('invoiceForm').reset();
+    
+    // Set today's date again
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
+    
+    showToast('✨ Sąskaita sėkmingai pridėta!', 'success');
+    
+    // Refresh dashboard
+    refreshDashboard();
+    
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('loading-btn');
+    submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Pridėti sąskaitą';
 }
 
 function deleteInvoice(invoiceId) {
@@ -370,21 +365,15 @@ function deleteInvoice(invoiceId) {
         return;
     }
 
-    fetch(`/api/invoices/${invoiceId}`, {
-        method: 'DELETE'
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.json();
-    })
-    .then(() => {
-        showToast('🗑️ Sąskaita sėkmingai ištrinta!', 'success');
-        refreshDashboard();
-    })
-    .catch(error => {
-        console.error('Error deleting invoice:', error);
-        showToast('Klaida ištrinant sąskaitą. Pabandykite iš naujo.', 'error');
-    });
+    // Remove from local array
+    invoices = invoices.filter(inv => inv.id != invoiceId);
+
+    // Save to localStorage
+    saveToLocalStorage(invoices);
+
+    showToast('🗑️ Sąskaita sėkmingai ištrinta!', 'success');
+    
+    refreshDashboard();
 }
 
 function renderInvoiceChart(invoices) {
