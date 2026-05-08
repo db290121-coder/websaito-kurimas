@@ -1,14 +1,1 @@
-Pagrindiniai pataisymai:
-Container: container su max-width: 1400px užtikrina, kad vaizdas nebūtų per platus.
-
-Statistikos kortelės: row-cols-md-4 užtikrina 4 stulpelius desktop'e, su col klasėmis kortelėms.
-
-Forma ir lentelė: col-lg-4 ir col-lg-8 užtikrina, kad desktop'e (lg ir didesni) jie būtų šalia vienas kito.
-
-Lentelė: table-responsive-lg užtikrina, kad tik mobiliame būtų responsive, o desktop'e normali lentelė. thead ir tbody turi atskirus td stulpelius kiekvienai reikšmei.
-
-Chart: Tvirtas height: 350px ir position: relative užtikrina stabilumą.
-
-Mobile: Pridėta white-space: nowrap lentelės ląstelėms ir margin-bottom statistikos kortelėms.
-
 pkill -f "python app.py" || true

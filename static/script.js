@@ -32,6 +32,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setup tooltips
     setupTooltips();
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+        themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    }
+    
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = html.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            html.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'light');
+            themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        } else {
+            html.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        }
+        // Refresh chart with new theme
+        refreshDashboard();
+    });
 });
 
 function setupTooltips() {
@@ -237,60 +263,56 @@ function downloadPDF(invoice) {
 }
 
 function refreshDashboard() {
+    console.log('Current invoices:', invoices);
+    
     const normalizedInvoices = invoices.map(normalizeInvoice);
     
     // Save to localStorage
     saveToLocalStorage(normalizedInvoices);
     
     const tbody = document.querySelector('#invoiceTable tbody');
+    if (!tbody) {
+        console.error('Table body NOT found!');
+        return;
+    }
     tbody.innerHTML = '';
-
+    
     updateStatistics(normalizedInvoices);
     updateSummary(normalizedInvoices);
-
+    
     if (!normalizedInvoices.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-solid fa-inbox"></i> No invoices found. Start by adding an invoice using the form above!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No data</td></tr>';
     } else {
-        let rowsHtml = '';
         normalizedInvoices.forEach((invoice, index) => {
-            rowsHtml += `
-                <tr class="fade-in-row" style="animation-delay: ${index * 80}ms;">
-                    <td><strong>#${invoice.id}</strong></td>
-                    <td>${invoice.client_name}</td>
-                    <td><strong>€ ${invoice.amount.toFixed(2)}</strong></td>
-                    <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
-                    <td class="tax-highlight">€ ${invoice.calculated_tax.toFixed(2)}</td>
-                    <td class="net-highlight">€ ${invoice.calculated_net_income.toFixed(2)}</td>
-                    <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}" title="Ištrinti sąskaitą">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice).replace(/'/g, "&apos;")}' title="Atsisiųsti PDF">
-                            <i class="fa-solid fa-file-pdf"></i>
-                        </button>
-                    </td>
-                </tr>
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>#${invoice.id}</td>
+                <td>${invoice.client}</td>
+                <td>€ ${invoice.amount.toFixed(2)}</td>
+                <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
+                <td>€ ${invoice.calculated_tax.toFixed(2)}</td>
+                <td>€ ${invoice.calculated_net_income.toFixed(2)}</td>
+                <td><button class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}">Delete</button></td>
+                <td><button class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice)}'>PDF</button></td>
             `;
+            tbody.appendChild(row);
         });
-        tbody.innerHTML = rowsHtml;
     }
-
+    
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', function() {
             deleteInvoice(this.dataset.id);
         });
     });
-
+    
     document.querySelectorAll('.download-pdf-btn').forEach(button => {
         button.addEventListener('click', function() {
             const invoice = JSON.parse(this.getAttribute('data-invoice'));
             downloadPDF(invoice);
         });
     });
-
-    renderInvoiceChart(normalizedInvoices);
+    
+    updateChart(normalizedInvoices);
     setupTooltips();
 }
 
@@ -329,7 +351,7 @@ function addInvoice() {
     // Create invoice object
     const newInvoice = {
         id: nextId++,
-        client_name: client,
+        client: client,
         amount: parseFloat(amount),
         date: date,
         expense_deduction_percent: parseFloat(expenseDeduction),
@@ -376,7 +398,7 @@ function deleteInvoice(invoiceId) {
     refreshDashboard();
 }
 
-function renderInvoiceChart(invoices) {
+function updateChart(invoices) {
     const ctx = document.getElementById('incomeChart');
     if (!ctx) {
         return;
@@ -451,13 +473,13 @@ function renderInvoiceChart(invoices) {
             scales: {
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#475569', font: { weight: '600' } }
+                    ticks: { color: 'var(--chart-text)', font: { weight: '600' } }
                 },
                 y: {
                     beginAtZero: true,
                     stacked: true,
-                    grid: { color: 'rgba(15, 23, 42, 0.08)', drawBorder: false },
-                    ticks: { color: '#475569', font: { weight: '600' } }
+                    grid: { color: 'var(--chart-grid)', drawBorder: false },
+                    ticks: { color: 'var(--chart-text)', font: { weight: '600' } }
                 }
             },
             plugins: {
@@ -465,16 +487,16 @@ function renderInvoiceChart(invoices) {
                     display: true,
                     position: 'top',
                     labels: {
-                        color: '#0f172a',
+                        color: 'var(--chart-text)',
                         font: { weight: '600' },
                         padding: 15,
                         usePointStyle: true
                     }
                 },
                 tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleColor: '#ffffff',
-                    bodyColor: '#f8fafc',
+                    backgroundColor: 'var(--surface)',
+                    titleColor: 'var(--text)',
+                    bodyColor: 'var(--muted)',
                     padding: 12,
                     cornerRadius: 12,
                     titleFont: { weight: 'bold' },
@@ -495,3 +517,5 @@ function renderInvoiceChart(invoices) {
         }
     });
 }
+// Initialize dashboard on script load
+//refreshDashboard();
