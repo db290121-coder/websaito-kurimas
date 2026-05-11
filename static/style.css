@@ -1,54 +1,54 @@
 :root {
     --bg: linear-gradient(135deg, #f5f7fa 0%, #eef2ff 100%);
-    --bg-color: #f8fafc;
-    --surface: #ffffff;
-    --card-bg: #ffffff;
+    --bg-color: #F0F2F5;       
+    --surface: #F5F5F5;        
+    --card-bg: #FAF9F6;        
     --input-bg: #ffffff;
-    --table-bg: #ffffff;
+    --table-bg: #FAF9F6;
     --primary: #4f46e5;
     --primary-dark: #4338ca;
     --primary-soft: #eef2ff;
     --muted: #667085;
-    --text: #0f172a;
-    --text-color: #1e293b;
+    --text: #1E1E1E;           
+    --text-color: #1E1E1E;
     --label-color: #0f172a;
     --danger: #dc2626;
     --success: #16a34a;
     --warning: #d946ef;
-    --border: rgba(15, 23, 42, 0.08);
+    --border: rgba(0, 0, 0, 0.08);
     --border-color: #e0e7ff;
     --shadow-sm: 0 4px 16px rgba(79, 70, 229, 0.08);
     --shadow-md: 0 8px 32px rgba(79, 70, 229, 0.12);
     --shadow-lg: 0 16px 48px rgba(79, 70, 229, 0.16);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --chart-grid: rgba(15, 23, 42, 0.08);
-    --chart-text: #000000;
+    --chart-grid: rgba(0, 0, 0, 0.05);
+    --chart-text: #1E1E1E;
 }
 
 [data-theme="dark"] {
     --bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    --bg-color: #0f172a;
-    --surface: #1e293b;
-    --card-bg: #1e293b;
-    --input-bg: #2d3748;
-    --table-bg: #1e293b;
+    --bg-color: #0C0C0C;       
+    --surface: #121212;        
+    --card-bg: #1E1E1E;        
+    --input-bg: #2C2C2C;       
+    --table-bg: #1E1E1E;
     --primary: #6366f1;
     --primary-dark: #4f46e5;
     --primary-soft: #1e293b;
     --muted: #94a3b8;
-    --text: #f8fafc;
-    --text-color: #f8fafc;
+    --text: #FAF9F6;           
+    --text-color: #FAF9F6;
     --label-color: #f8fafc;
     --danger: #ef4444;
     --success: #22c55e;
     --warning: #ec4899;
-    --border: rgba(241, 245, 249, 0.1);
+    --border: rgba(255, 255, 255, 0.1);
     --border-color: #4a5568;
     --shadow-sm: 0 4px 16px rgba(15, 23, 42, 0.3);
     --shadow-md: 0 8px 32px rgba(15, 23, 42, 0.4);
     --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.5);
-    --chart-grid: rgba(241, 245, 249, 0.1);
-    --chart-text: #ffffff;
+    --chart-text: #FAF9F6;     
+    --chart-grid: rgba(255, 255, 255, 0.05);
 }
 
 /* Bootstrap Override for Dark Mode */
@@ -234,8 +234,9 @@ html {
 
 body {
     background: var(--bg) !important;
-    background-color: var(--bg-color) !important;
-    color: var(--text-color) !important;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background 0.3s ease;
 }
 
 /* Main container centering */
@@ -861,7 +862,47 @@ body::before {
         justify-content: center;
         min-height: 120px;
     }
-}/* Theme Toggle Button */
+
+}
+
+/* Viršutinis meniu */
+.top-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.menu-center {
+    display: flex;
+    gap: 2rem;
+}
+
+.menu-link {
+    text-decoration: none;
+    color: var(--muted);
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.menu-link:hover, .menu-link.active {
+    color: var(--primary);
+}
+
+/* Grafiko konteineris tamsiam fonui */
+.chart-container {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+}
+
+/* Theme Toggle Button */
 .theme-toggle-btn {
     position: fixed;
     top: 20px;
