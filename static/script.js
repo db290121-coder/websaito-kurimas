@@ -1,63 +1,92 @@
 let incomeChart;
+let ratioChart;
 const STORAGE_KEY = 'invoices_cache';
 const STORAGE_TIMESTAMP = 'invoices_timestamp';
+const SETTINGS_KEY = 'invoice_settings';
+const DEFAULT_SETTINGS = {
+    gpmPercent: 15,
+    expenseDeductionPercent: 30,
+    vsdPercent: 9,
+    psdPercent: 6.98
+};
 let invoices = [];
 let nextId = 1;
+let settings = loadSettings();
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    const tooltipTriggers = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipTriggers = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggers.forEach(function(trigger) {
-        new bootstrap.Tooltip(trigger);
+        if (window.bootstrap && bootstrap.Tooltip) {
+            new bootstrap.Tooltip(trigger);
+        }
     });
 
-    // Set today's date by default
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').value = today;
+    const dateInput = document.getElementById('date');
+    if (dateInput) dateInput.value = today;
 
-    // Load initial data from localStorage
     invoices = getFromLocalStorage() || [];
     if (invoices.length > 0) {
         nextId = Math.max(...invoices.map(inv => inv.id)) + 1;
     }
 
+    applySettingsToForms();
+
     const form = document.getElementById('invoiceForm');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        addInvoice();
-    });
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addInvoice();
+        });
+    }
 
-    // Load initial data
-    refreshDashboard();
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSettings();
+        });
+    }
 
-    // Setup tooltips
-    setupTooltips();
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            renderInvoiceTable(filterInvoices(searchInput.value));
+        });
+    }
 
-    // Theme toggle
     const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
-    
-    // Load saved theme
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        html.setAttribute('data-theme', 'dark');
-        themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+            if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        } else {
+            html.removeAttribute('data-theme');
+            if (themeToggle) themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        }
+        localStorage.setItem('theme', theme === 'dark' ? 'dark' : 'light');
     }
     
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = html.getAttribute('data-theme');
-        if (currentTheme === 'dark') {
-            html.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'light');
-            themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
-        } else {
-            html.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
-        }
-        // Refresh chart with new theme
-        refreshDashboard();
-    });
+    const savedTheme = localStorage.getItem('theme');
+    applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                applyTheme('light');
+            } else {
+                applyTheme('dark');
+            }
+            refreshDashboard();
+            updateChart(invoices);
+        });
+    }
+
+    updateNavActive();
+    refreshDashboard();
 });
 
 function setupTooltips() {
@@ -95,26 +124,18 @@ function showToast(message, type = 'success', duration = 3000) {
 
 function calculateTaxValues(invoice) {
     const amount = Number(invoice.amount || 0);
-    const expenseDeductionPercent = Number(invoice.expense_deduction_percent ?? invoice.expenseDeductionPercent ?? 30);
-    const vsdPercent = Number(invoice.vsd_percent ?? invoice.vsdPercent ?? 9);
-    const psdPercent = Number(invoice.psd_percent ?? invoice.psdPercent ?? 6.98);
+    const expenseDeductionPercent = Number(invoice.expense_deduction_percent ?? invoice.expenseDeductionPercent ?? settings.expenseDeductionPercent ?? DEFAULT_SETTINGS.expenseDeductionPercent);
+    const vsdPercent = Number(invoice.vsd_percent ?? invoice.vsdPercent ?? settings.vsdPercent ?? DEFAULT_SETTINGS.vsdPercent);
+    const psdPercent = Number(invoice.psd_percent ?? invoice.psdPercent ?? settings.psdPercent ?? DEFAULT_SETTINGS.psdPercent);
+    const gpmPercent = Number(invoice.gpm_percent ?? invoice.gpmPercent ?? settings.gpmPercent ?? DEFAULT_SETTINGS.gpmPercent);
 
-    // Expense deduction (30% of gross amount)
     const expenseDeduction = amount * (expenseDeductionPercent / 100);
     const taxBase = amount - expenseDeduction;
-    
-    // GPM 15% on full tax base (after expense deduction)
-    const gpm = taxBase * 0.15;
-    
-    // VSD and PSD calculated on 90% of tax base
+    const gpm = taxBase * (gpmPercent / 100);
     const vsdPsdBase = taxBase * 0.9;
     const vsd = vsdPsdBase * (vsdPercent / 100);
     const psd = vsdPsdBase * (psdPercent / 100);
-    
-    // Total tax
     const totalTax = gpm + vsd + psd;
-    
-    // Net income = gross amount - total taxes
     const netIncome = amount - totalTax;
 
     return {
@@ -159,13 +180,89 @@ function getFromLocalStorage() {
     }
 }
 
+function getSettingsFromLocalStorage() {
+    try {
+        const data = localStorage.getItem(SETTINGS_KEY);
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        console.warn('Settings read failed:', e);
+        return null;
+    }
+}
+
+function saveSettingsToLocalStorage(settingsObject) {
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsObject));
+    } catch (e) {
+        console.warn('Settings save failed:', e);
+    }
+}
+
+function loadSettings() {
+    const stored = getSettingsFromLocalStorage();
+    return {
+        ...DEFAULT_SETTINGS,
+        ...(stored || {})
+    };
+}
+
+function applySettingsToForms() {
+    settings = loadSettings();
+    const expenseField = document.getElementById('expenseDeduction');
+    const vsdField = document.getElementById('vsdPercent');
+    const psdField = document.getElementById('psdPercent');
+    const gpmField = document.getElementById('gpmPercent');
+    const expenseSettingsField = document.getElementById('expenseDeductionPercent');
+
+    if (expenseField) expenseField.value = settings.expenseDeductionPercent;
+    if (vsdField) vsdField.value = settings.vsdPercent;
+    if (psdField) psdField.value = settings.psdPercent;
+    if (gpmField) gpmField.value = settings.gpmPercent;
+    if (expenseSettingsField) expenseSettingsField.value = settings.expenseDeductionPercent;
+}
+
+function saveSettings() {
+    const gpmPercent = parseFloat(document.getElementById('gpmPercent')?.value) || DEFAULT_SETTINGS.gpmPercent;
+    const expenseDeductionPercent = parseFloat(document.getElementById('expenseDeductionPercent')?.value) || DEFAULT_SETTINGS.expenseDeductionPercent;
+    const vsdPercent = parseFloat(document.getElementById('vsdPercent')?.value) || DEFAULT_SETTINGS.vsdPercent;
+    const psdPercent = parseFloat(document.getElementById('psdPercent')?.value) || DEFAULT_SETTINGS.psdPercent;
+
+    const newSettings = {
+        gpmPercent,
+        expenseDeductionPercent,
+        vsdPercent,
+        psdPercent
+    };
+
+    saveSettingsToLocalStorage(newSettings);
+    settings = newSettings;
+    applySettingsToForms();
+    refreshDashboard();
+    showToast('⚙️ Nustatymai sėkmingai išsaugoti', 'success');
+}
+
+function updateNavActive() {
+    const path = window.location.pathname.replace(/\/$/, '') || '/';
+    document.querySelectorAll('.topbar-link').forEach(link => {
+        const href = link.getAttribute('href')?.replace(/\/$/, '') || '/';
+        if (href === path) {
+            link.classList.add('active');
+        } else if (href === '/' && (path === '' || path === '/')) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+}
+
 function updateStatistics(invoices) {
-    if (!invoices.length) {
-        document.getElementById('statsContainer').style.display = 'none';
+    const statsContainer = document.getElementById('statsContainer');
+    if (!statsContainer || !invoices.length) {
+        if (statsContainer) statsContainer.style.display = 'none';
         return;
     }
 
-    document.getElementById('statsContainer').style.display = 'grid';
+    statsContainer.style.display = 'grid';
 
     let totalAmount = 0;
     let totalTax = 0;
@@ -177,19 +274,26 @@ function updateStatistics(invoices) {
         totalNet += invoice.calculated_net_income;
     });
 
-    document.getElementById('totalAmount').textContent = '€ ' + totalAmount.toFixed(2);
-    document.getElementById('totalTax').textContent = '€ ' + totalTax.toFixed(2);
-    document.getElementById('totalNet').textContent = '€ ' + totalNet.toFixed(2);
-    document.getElementById('totalCount').textContent = invoices.length;
+    const totalAmountEl = document.getElementById('totalAmount');
+    const totalTaxEl = document.getElementById('totalTax');
+    const totalNetEl = document.getElementById('totalNet');
+    const totalCountEl = document.getElementById('totalCount');
+    if (totalAmountEl) totalAmountEl.textContent = '€ ' + totalAmount.toFixed(2);
+    if (totalTaxEl) totalTaxEl.textContent = '€ ' + totalTax.toFixed(2);
+    if (totalNetEl) totalNetEl.textContent = '€ ' + totalNet.toFixed(2);
+    if (totalCountEl) totalCountEl.textContent = invoices.length;
 }
 
 function updateSummary(invoices) {
+    const summaryCard = document.getElementById('summaryCard');
+    if (!summaryCard) return;
+
     if (!invoices.length) {
-        document.getElementById('summaryCard').style.display = 'none';
+        summaryCard.style.display = 'none';
         return;
     }
 
-    document.getElementById('summaryCard').style.display = 'block';
+    summaryCard.style.display = 'block';
 
     let totalGPM = 0;
     let totalVSD = 0;
@@ -205,10 +309,15 @@ function updateSummary(invoices) {
 
     const avgGPMPercent = totalAmount > 0 ? ((totalGPM / totalAmount) * 100) : 0;
 
-    document.getElementById('summaryGPM').textContent = '€ ' + totalGPM.toFixed(2);
-    document.getElementById('summaryGPMPercent').textContent = avgGPMPercent.toFixed(2) + ' %';
-    document.getElementById('summaryVSD').textContent = '€ ' + totalVSD.toFixed(2);
-    document.getElementById('summaryPSD').textContent = '€ ' + totalPSD.toFixed(2);
+    const summaryGPMEl = document.getElementById('summaryGPM');
+    const summaryGPMPercentEl = document.getElementById('summaryGPMPercent');
+    const summaryVSDEl = document.getElementById('summaryVSD');
+    const summaryPSDEl = document.getElementById('summaryPSD');
+
+    if (summaryGPMEl) summaryGPMEl.textContent = '€ ' + totalGPM.toFixed(2);
+    if (summaryGPMPercentEl) summaryGPMPercentEl.textContent = avgGPMPercent.toFixed(2) + ' %';
+    if (summaryVSDEl) summaryVSDEl.textContent = '€ ' + totalVSD.toFixed(2);
+    if (summaryPSDEl) summaryPSDEl.textContent = '€ ' + totalPSD.toFixed(2);
 }
 
 function downloadPDF(invoice) {
@@ -225,7 +334,7 @@ function downloadPDF(invoice) {
     
     const details = [
         ['Sąskaitos ID:', `#${invoice.id}`],
-        ['Klientas:', invoice.client_name],
+        ['Klientas:', invoice.client],
         ['Data:', invoice.date],
         ['Suma (Bruto):', `€ ${invoice.amount.toFixed(2)}`],
         ['Mokesčiai:', `€ ${invoice.calculated_tax.toFixed(2)}`],
@@ -246,9 +355,9 @@ function downloadPDF(invoice) {
     yPos += 8;
     doc.setFontSize(10);
     const breakdown = [
-        [`GPM (15%):`, `€ ${invoice.calculated_gpm.toFixed(2)}`],
-        [`VSD:`, `€ ${invoice.calculated_vsd.toFixed(2)}`],
-        [`PSD:`, `€ ${invoice.calculated_psd.toFixed(2)}`]
+        [`GPM (${(invoice.gpm_percent ?? settings.gpmPercent ?? DEFAULT_SETTINGS.gpmPercent).toFixed(2)}%):`, `€ ${invoice.calculated_gpm.toFixed(2)}`],
+        ['VSD:', `€ ${invoice.calculated_vsd.toFixed(2)}`],
+        ['PSD:', `€ ${invoice.calculated_psd.toFixed(2)}`]
     ];
     
     breakdown.forEach(([label, value]) => {
@@ -262,124 +371,141 @@ function downloadPDF(invoice) {
     showToast(`📄 PDF sėkmingai atsisiųstas!`, 'success');
 }
 
-function refreshDashboard() {
-    console.log('Current invoices:', invoices);
-    
-    const normalizedInvoices = invoices.map(normalizeInvoice);
-    
-    // Save to localStorage
-    saveToLocalStorage(normalizedInvoices);
-    
+function filterInvoices(searchValue) {
+    if (!searchValue) return invoices;
+    const query = searchValue.trim().toLowerCase();
+    return invoices.filter(invoice => invoice.client.toLowerCase().includes(query));
+}
+
+function renderInvoiceTable(data) {
     const tbody = document.querySelector('#invoiceTable tbody');
-    if (!tbody) {
-        console.error('Table body NOT found!');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No data</td></tr>';
         return;
     }
-    tbody.innerHTML = '';
-    
-    updateStatistics(normalizedInvoices);
-    updateSummary(normalizedInvoices);
-    
-    if (!normalizedInvoices.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No data</td></tr>';
-    } else {
-        normalizedInvoices.forEach((invoice, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>#${invoice.id}</td>
-                <td>${invoice.client}</td>
-                <td>€ ${invoice.amount.toFixed(2)}</td>
-                <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
-                <td>€ ${invoice.calculated_tax.toFixed(2)}</td>
-                <td>€ ${invoice.calculated_net_income.toFixed(2)}</td>
-                <td><button class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}">Delete</button></td>
-                <td><button class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice='${JSON.stringify(invoice)}'>PDF</button></td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-    
+
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    data.forEach(invoice => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>#${invoice.id}</td>
+            <td>${invoice.client}</td>
+            <td>€ ${invoice.amount.toFixed(2)}</td>
+            <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
+            <td>€ ${invoice.calculated_tax.toFixed(2)}</td>
+            <td>€ ${invoice.calculated_net_income.toFixed(2)}</td>
+            <td><button class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}">Delete</button></td>
+            <td><button class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice="${encodeURIComponent(JSON.stringify(invoice))}">PDF</button></td>
+        `;
+
+        if (isDarkTheme) {
+            row.querySelectorAll('td').forEach(td => {
+                td.style.setProperty('background-color', '#1e293b', 'important');
+                td.style.setProperty('color', '#f8fafc', 'important');
+            });
+        }
+
+        tbody.appendChild(row);
+    });
+
+    setupActionButtons();
+}
+
+function setupActionButtons() {
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', function() {
             deleteInvoice(this.dataset.id);
         });
     });
-    
+
     document.querySelectorAll('.download-pdf-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const invoice = JSON.parse(this.getAttribute('data-invoice'));
+            const invoice = JSON.parse(decodeURIComponent(this.getAttribute('data-invoice')));
             downloadPDF(invoice);
         });
     });
-    
-    updateChart(normalizedInvoices);
+}
+
+function refreshDashboard() {
+    invoices = invoices.map(normalizeInvoice);
+    saveToLocalStorage(invoices);
+
+    const searchValue = document.getElementById('searchInput')?.value || '';
+    const rows = searchValue ? filterInvoices(searchValue) : invoices;
+
+    renderInvoiceTable(rows);
+    updateStatistics(invoices);
+    updateSummary(invoices);
+    updateChart(invoices);
     setupTooltips();
 }
 
 function addInvoice() {
-    const client = document.getElementById('client').value.trim();
-    const amount = document.getElementById('amount').value;
-    const date = document.getElementById('date').value;
-    const expenseDeduction = document.getElementById('expenseDeduction').value || 30;
-    const vsdPercent = document.getElementById('vsdPercent').value || 9;
-    const psdPercent = document.getElementById('psdPercent').value || 6.98;
+    const client = document.getElementById('client')?.value.trim();
+    const amount = document.getElementById('amount')?.value;
+    const date = document.getElementById('date')?.value;
 
-    // Validation
+    const currentSettings = loadSettings();
+    const expenseDeduction = parseFloat(document.getElementById('expenseDeduction')?.value || currentSettings.expenseDeductionPercent) || currentSettings.expenseDeductionPercent;
+    const vsdPercent = parseFloat(document.getElementById('vsdPercent')?.value || currentSettings.vsdPercent) || currentSettings.vsdPercent;
+    const psdPercent = parseFloat(document.getElementById('psdPercent')?.value || currentSettings.psdPercent) || currentSettings.psdPercent;
+    const gpmPercent = currentSettings.gpmPercent;
+
     if (!client) {
         showToast('Prašau įvesti kliento pavadinimą', 'warning');
-        document.getElementById('client').focus();
+        document.getElementById('client')?.focus();
         return;
     }
 
     if (!amount || amount <= 0) {
         showToast('Prašau įvesti teisingą sumą', 'warning');
-        document.getElementById('amount').focus();
+        document.getElementById('amount')?.focus();
         return;
     }
 
     if (!date) {
         showToast('Prašau pasirinkti datą', 'warning');
-        document.getElementById('date').focus();
+        document.getElementById('date')?.focus();
         return;
     }
 
     const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = true;
-    submitBtn.classList.add('loading-btn');
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pridedama...';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading-btn');
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pridedama...';
+    }
 
-    // Create invoice object
     const newInvoice = {
         id: nextId++,
         client: client,
         amount: parseFloat(amount),
         date: date,
-        expense_deduction_percent: parseFloat(expenseDeduction),
-        vsd_percent: parseFloat(vsdPercent),
-        psd_percent: parseFloat(psdPercent)
+        expense_deduction_percent: expenseDeduction,
+        vsd_percent: vsdPercent,
+        psd_percent: psdPercent,
+        gpm_percent: gpmPercent
     };
 
-    // Add to local array
     invoices.push(newInvoice);
-
-    // Save to localStorage
     saveToLocalStorage(invoices);
 
-    // Reset form
-    document.getElementById('invoiceForm').reset();
-    
-    // Set today's date again
+    document.getElementById('invoiceForm')?.reset();
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').value = today;
-    
+    if (document.getElementById('date')) document.getElementById('date').value = today;
+
     showToast('✨ Sąskaita sėkmingai pridėta!', 'success');
-    
-    // Refresh dashboard
     refreshDashboard();
-    
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('loading-btn');
-    submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Pridėti sąskaitą';
+
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading-btn');
+        submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Pridėti sąskaitą';
+    }
 }
 
 function deleteInvoice(invoiceId) {
@@ -400,9 +526,10 @@ function deleteInvoice(invoiceId) {
 
 function updateChart(invoices) {
     const ctx = document.getElementById('incomeChart');
-    if (!ctx) {
-        return;
-    }
+    const pieCanvas = document.getElementById('ratioPieChart');
+    const style = getComputedStyle(document.documentElement);
+    const textColor = style.getPropertyValue('--chart-text').trim() || '#000000';
+    const gridColor = style.getPropertyValue('--chart-grid').trim() || 'rgba(0,0,0,0.1)';
 
     const monthlyData = invoices.reduce((acc, invoice) => {
         const [year, month] = invoice.date.split('-');
@@ -422,100 +549,137 @@ function updateChart(invoices) {
             'Liepa', 'Rugpjūtis', 'Rugsėjis', 'Spalis', 'Lapkritis', 'Gruodis'];
         return `${monthNames[parseInt(month, 10) - 1]} ${year}`;
     });
-    const brutoTotals = sortedKeys.map(key => Number(monthlyData[key].bruto.toFixed(2)));
+
     const netoTotals = sortedKeys.map(key => Number(monthlyData[key].neto.toFixed(2)));
     const taxTotals = sortedKeys.map(key => Number(monthlyData[key].taxes.toFixed(2)));
 
-    if (!labels.length) {
-        labels.push('Nėra duomenų');
-        brutoTotals.push(0);
-        netoTotals.push(0);
-        taxTotals.push(0);
-    }
+    if (ctx) {
+        if (!labels.length) {
+            labels.push('Nėra duomenų');
+            netoTotals.push(0);
+            taxTotals.push(0);
+        }
 
-    if (incomeChart) {
-        incomeChart.destroy();
-    }
+        if (incomeChart) {
+            incomeChart.destroy();
+        }
 
-    incomeChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Likutis į rankas (€)',
-                data: netoTotals,
-                backgroundColor: 'rgba(34, 197, 94, 0.85)',
-                borderColor: 'rgba(34, 197, 94, 1)',
-                borderWidth: 2,
-                hoverBackgroundColor: 'rgba(34, 197, 94, 1)',
-                borderRadius: 12,
-                maxBarThickness: 45,
-                stack: 'Stack 0'
-            }, {
-                label: 'Mokesčiai (€)',
-                data: taxTotals,
-                backgroundColor: 'rgba(239, 68, 68, 0.85)',
-                borderColor: 'rgba(239, 68, 68, 1)',
-                borderWidth: 2,
-                hoverBackgroundColor: 'rgba(239, 68, 68, 1)',
-                borderRadius: 12,
-                maxBarThickness: 45,
-                stack: 'Stack 0'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
+        incomeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Likutis į rankas (€)',
+                    data: netoTotals,
+                    backgroundColor: 'rgba(34, 197, 94, 0.85)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderWidth: 2,
+                    borderRadius: 12,
+                    stack: 'Stack 0',
+                    maxBarThickness: 50,
+                }, {
+                    label: 'Mokesčiai (€)',
+                    data: taxTotals,
+                    backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 2,
+                    borderRadius: 12,
+                    stack: 'Stack 0',
+                    maxBarThickness: 50,
+                }]
             },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { color: 'var(--chart-text)', font: { weight: '600' } }
-                },
-                y: {
-                    beginAtZero: true,
-                    stacked: true,
-                    grid: { color: 'var(--chart-grid)', drawBorder: false },
-                    ticks: { color: 'var(--chart-text)', font: { weight: '600' } }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: 'var(--chart-text)',
-                        font: { weight: '600' },
-                        padding: 15,
-                        usePointStyle: true
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: textColor,
+                            font: { weight: '600' }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        stacked: true,
+                        grid: {
+                            color: gridColor,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: textColor,
+                            font: { weight: '600' }
+                        }
                     }
                 },
-                tooltip: {
-                    backgroundColor: 'var(--surface)',
-                    titleColor: 'var(--text)',
-                    bodyColor: 'var(--muted)',
-                    padding: 12,
-                    cornerRadius: 12,
-                    titleFont: { weight: 'bold' },
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: textColor,
+                            font: { weight: '600' },
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: style.getPropertyValue('--surface').trim(),
+                        titleColor: textColor,
+                        bodyColor: style.getPropertyValue('--muted').trim()
+                    }
+                }
+            }
+        });
+    }
+
+    if (pieCanvas) {
+        const totalTax = invoices.reduce((sum, invoice) => sum + invoice.calculated_tax, 0);
+        const totalNet = invoices.reduce((sum, invoice) => sum + invoice.calculated_net_income, 0);
+        const pieValues = totalTax || totalNet ? [totalTax, totalNet] : [1, 1];
+
+        if (ratioChart) {
+            ratioChart.destroy();
+        }
+
+        ratioChart = new Chart(pieCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Mokesčiai', 'Grynasis pelnas'],
+                datasets: [{
+                    data: pieValues,
+                    backgroundColor: ['rgba(239, 68, 68, 0.85)', 'rgba(34, 197, 94, 0.85)'],
+                    borderColor: ['rgba(239, 68, 68, 1)', 'rgba(34, 197, 94, 1)'],
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: textColor,
+                            font: { weight: '600' },
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: style.getPropertyValue('--surface').trim(),
+                        titleColor: textColor,
+                        bodyColor: style.getPropertyValue('--muted').trim(),
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const total = pieValues.reduce((sum, current) => sum + current, 0);
+                                const percentage = total ? (value / total) * 100 : 0;
+                                return `${label}: € ${value.toFixed(2)} (${percentage.toFixed(1)}%)`;
                             }
-                            if (context.parsed.y !== null) {
-                                label += '€ ' + context.parsed.y.toFixed(2);
-                            }
-                            return label;
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 }
 // Initialize dashboard on script load
 //refreshDashboard();

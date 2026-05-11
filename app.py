@@ -91,8 +91,21 @@ def calculate_finances(amount, expense_deduction_percent=30.0, vsd_percent=9.0, 
     }
 
 @app.route('/')
+@app.route('/index.html')
 def index():
     return render_template('index.html')
+
+@app.route('/archive.html')
+def archive():
+    return render_template('archive.html')
+
+@app.route('/analytics.html')
+def analytics():
+    return render_template('analytics.html')
+
+@app.route('/settings.html')
+def settings():
+    return render_template('settings.html')
 
 @app.route('/api/invoices', methods=['GET', 'POST'])
 def invoices():
