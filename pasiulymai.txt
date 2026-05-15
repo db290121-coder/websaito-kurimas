@@ -1,1 +1,3 @@
 pkill -f "python app.py" || true
+
+python app.py

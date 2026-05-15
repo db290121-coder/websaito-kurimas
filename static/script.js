@@ -15,6 +15,15 @@ let settings = loadSettings();
 
 document.addEventListener('DOMContentLoaded', function() {
     const tooltipTriggers = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const hamburger = document.getElementById('hamburger');
+    const menu = document.querySelector('.topbar-menu');
+
+    if (hamburger && menu) {
+        hamburger.addEventListener('click', () => {
+            menu.classList.toggle('active');
+        });
+    }
+
     tooltipTriggers.forEach(function(trigger) {
         if (window.bootstrap && bootstrap.Tooltip) {
             new bootstrap.Tooltip(trigger);
@@ -46,6 +55,19 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             saveSettings();
         });
+    }
+
+    // Country/Region Selection Handler
+    const countrySelect = document.getElementById('countrySelect');
+    if (countrySelect) {
+        countrySelect.addEventListener('change', function() {
+            handleCountryChange(this.value);
+        });
+        
+        // Load saved country selection
+        const savedCountry = localStorage.getItem('selectedCountry') || 'LT';
+        countrySelect.value = savedCountry;
+        handleCountryChange(savedCountry);
     }
 
     const searchInput = document.getElementById('searchInput');
@@ -88,6 +110,52 @@ document.addEventListener('DOMContentLoaded', function() {
     updateNavActive();
     refreshDashboard();
 });
+
+function handleCountryChange(country) {
+    localStorage.setItem('selectedCountry', country);
+    
+    const lithuaniaFields = document.getElementById('lithuaniaFields');
+    const customFields = document.getElementById('customFields');
+    
+    if (country === 'LT') {
+        // Show Lithuania-specific fields
+        if (lithuaniaFields) {
+            lithuaniaFields.style.display = 'grid';
+            // Make sure to also set the form-control styling
+            lithuaniaFields.classList.add('row', 'g-4');
+        }
+        if (customFields) customFields.style.display = 'none';
+        
+        // Set Lithuania default values
+        const gpmField = document.getElementById('gpmPercent');
+        const expenseField = document.getElementById('expenseDeductionPercent');
+        const vsdField = document.getElementById('vsdPercent');
+        const psdField = document.getElementById('psdPercent');
+        
+        if (gpmField) gpmField.value = 15;
+        if (expenseField) expenseField.value = 30;
+        if (vsdField) vsdField.value = 9;
+        if (psdField) psdField.value = 6.98;
+        
+        showToast('✅ Pasirinkota: Lietuva (LT) - Standartiniai mokesčiai pasidengiau', 'success');
+    } else if (country === 'CUSTOM') {
+        // Show custom tax fields
+        if (lithuaniaFields) lithuaniaFields.style.display = 'none';
+        if (customFields) {
+            customFields.style.display = 'grid';
+            customFields.classList.add('row', 'g-4');
+        }
+        
+        // Set default custom values
+        const customTaxField = document.getElementById('customTaxPercent');
+        const customExpenseField = document.getElementById('customExpensePercent');
+        
+        if (customTaxField) customTaxField.value = 0;
+        if (customExpenseField) customExpenseField.value = 0;
+        
+        showToast('✅ Pasirinkota: Custom / Global - Galite rankiniu būdu nustatyti mokesčius', 'success');
+    }
+}
 
 function setupTooltips() {
     const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
@@ -681,5 +749,16 @@ function updateChart(invoices) {
         });
     }
 }
+
+window.addEventListener('scroll', () => {
+    const topbar = document.querySelector('.topbar');
+
+    if (window.scrollY > 50) {
+        topbar.classList.add('shrink');
+    } else {
+        topbar.classList.remove('shrink');
+    }
+});
+
 // Initialize dashboard on script load
 //refreshDashboard();

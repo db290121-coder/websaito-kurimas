@@ -1,11 +1,15 @@
 from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect
 import sqlite3
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template
+import bcrypt
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 CORS(app)
+csrf = CSRFProtect(app)
 
 DATABASE = 'invoices.db'
 
@@ -30,6 +34,20 @@ def init_db():
                 gpm REAL,
                 vsd REAL,
                 psd REAL
+            )
+        ''')
+        # Create tax_settings table for country-specific tax configurations
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS tax_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                country TEXT NOT NULL UNIQUE,
+                gpm_percent REAL DEFAULT 15.0,
+                expense_deduction_percent REAL DEFAULT 30.0,
+                vsd_percent REAL DEFAULT 9.0,
+                psd_percent REAL DEFAULT 6.98,
+                is_custom INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         # Add columns if they don't exist (for migration)
@@ -60,6 +78,17 @@ def init_db():
         try:
             conn.execute('ALTER TABLE invoices ADD COLUMN psd REAL')
         except sqlite3.OperationalError:
+            pass
+        
+        # Initialize default tax settings for Lithuania
+        try:
+            conn.execute('''
+                INSERT INTO tax_settings (country, gpm_percent, expense_deduction_percent, vsd_percent, psd_percent, is_custom)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', ('LT', 15.0, 30.0, 9.0, 6.98, 0))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            # Already exists
             pass
 
 def calculate_finances(amount, expense_deduction_percent=30.0, vsd_percent=9.0, psd_percent=6.98):
@@ -166,6 +195,43 @@ def delete_invoice(invoice_id):
             return jsonify({'error': 'Invoice not found'}), 404
         conn.commit()
     return jsonify({'message': 'Invoice deleted successfully'})
+
+@app.route('/api/tax-settings', methods=['GET'])
+def get_tax_settings():
+    """Get all available tax settings by country"""
+    with get_db() as conn:
+        settings = conn.execute('SELECT * FROM tax_settings').fetchall()
+    return jsonify([dict(s) for s in settings])
+
+@app.route('/api/tax-settings/<country>', methods=['GET', 'POST'])
+@csrf.exempt  # Exempt from CSRF for API calls - should implement token-based auth in production
+def tax_settings(country):
+    """Get or update tax settings for a specific country"""
+    if request.method == 'GET':
+        with get_db() as conn:
+            setting = conn.execute('SELECT * FROM tax_settings WHERE country = ?', (country,)).fetchone()
+        if setting:
+            return jsonify(dict(setting))
+        return jsonify({'error': 'Country not found'}), 404
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        with get_db() as conn:
+            conn.execute('''
+                INSERT OR REPLACE INTO tax_settings 
+                (country, gpm_percent, expense_deduction_percent, vsd_percent, psd_percent, is_custom, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                country,
+                float(data.get('gpm_percent', 15.0)),
+                float(data.get('expense_deduction_percent', 30.0)),
+                float(data.get('vsd_percent', 9.0)),
+                float(data.get('psd_percent', 6.98)),
+                int(data.get('is_custom', 0)),
+                datetime.now().isoformat()
+            ))
+            conn.commit()
+        return jsonify({'message': 'Tax settings updated successfully'}), 200
 
 if __name__ == '__main__':
     init_db()
