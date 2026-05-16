@@ -33,7 +33,8 @@ def init_db():
                 net_income REAL NOT NULL,
                 gpm REAL,
                 vsd REAL,
-                psd REAL
+                psd REAL,
+                status TEXT DEFAULT 'pending'
             )
         ''')
         # Create tax_settings table for country-specific tax configurations
@@ -77,6 +78,10 @@ def init_db():
             pass
         try:
             conn.execute('ALTER TABLE invoices ADD COLUMN psd REAL')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE invoices ADD COLUMN status TEXT DEFAULT "pending"')
         except sqlite3.OperationalError:
             pass
         
@@ -146,6 +151,7 @@ def invoices():
         expense_deduction_percent = float(data.get('expense_deduction_percent', 30.0))
         vsd_percent = float(data.get('vsd_percent', 9.0))
         psd_percent = float(data.get('psd_percent', 6.98))
+        status = data.get('status', 'pending')  # 'pending' or 'paid'
         
         finances = calculate_finances(amount, expense_deduction_percent, vsd_percent, psd_percent)
         tax_paid = finances['tax_paid']
@@ -156,9 +162,9 @@ def invoices():
         
         with get_db() as conn:
             conn.execute('''INSERT INTO invoices 
-                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd))
+                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd, status) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd, status))
             conn.commit()
         
         return jsonify({'message': 'Invoice added successfully'}), 201
@@ -195,6 +201,24 @@ def delete_invoice(invoice_id):
             return jsonify({'error': 'Invoice not found'}), 404
         conn.commit()
     return jsonify({'message': 'Invoice deleted successfully'})
+
+@app.route('/api/invoices/<int:invoice_id>/status', methods=['PATCH'])
+@csrf.exempt  # Exempt from CSRF for API calls
+def update_invoice_status(invoice_id):
+    """Update the status of an invoice (pending/paid)"""
+    data = request.get_json()
+    status = data.get('status', 'pending')
+    
+    if status not in ['pending', 'paid']:
+        return jsonify({'error': 'Invalid status. Must be "pending" or "paid"'}), 400
+    
+    with get_db() as conn:
+        cursor = conn.execute('UPDATE invoices SET status = ? WHERE id = ?', (status, invoice_id))
+        if cursor.rowcount == 0:
+            return jsonify({'error': 'Invoice not found'}), 404
+        conn.commit()
+    
+    return jsonify({'message': 'Invoice status updated successfully', 'status': status}), 200
 
 @app.route('/api/tax-settings', methods=['GET'])
 def get_tax_settings():

@@ -1,5 +1,7 @@
 let incomeChart;
+let miniChart;
 let ratioChart;
+let yearlyChart;
 const STORAGE_KEY = 'invoices_cache';
 const STORAGE_TIMESTAMP = 'invoices_timestamp';
 const SETTINGS_KEY = 'invoice_settings';
@@ -49,6 +51,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addInvoice();
+        });
+    }
+
     const settingsForm = document.getElementById('settingsForm');
     if (settingsForm) {
         settingsForm.addEventListener('submit', function(e) {
@@ -70,11 +80,25 @@ document.addEventListener('DOMContentLoaded', function() {
         handleCountryChange(savedCountry);
     }
 
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            renderInvoiceTable(filterInvoices(searchInput.value));
+    const archiveSearch = document.getElementById('searchInput');
+    if (archiveSearch) {
+        archiveSearch.addEventListener('input', () => {
+            applyFilters();
         });
+    }
+
+    const dateFromInput = document.getElementById('dateFromInput');
+    const dateToInput = document.getElementById('dateToInput');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (dateFromInput) {
+        dateFromInput.addEventListener('change', applyFilters);
+    }
+    if (dateToInput) {
+        dateToInput.addEventListener('change', applyFilters);
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', applyFilters);
     }
 
     const themeToggle = document.getElementById('theme-toggle');
@@ -191,19 +215,48 @@ function showToast(message, type = 'success', duration = 3000) {
 }
 
 function calculateTaxValues(invoice) {
-    const amount = Number(invoice.amount || 0);
-    const expenseDeductionPercent = Number(invoice.expense_deduction_percent ?? invoice.expenseDeductionPercent ?? settings.expenseDeductionPercent ?? DEFAULT_SETTINGS.expenseDeductionPercent);
-    const vsdPercent = Number(invoice.vsd_percent ?? invoice.vsdPercent ?? settings.vsdPercent ?? DEFAULT_SETTINGS.vsdPercent);
-    const psdPercent = Number(invoice.psd_percent ?? invoice.psdPercent ?? settings.psdPercent ?? DEFAULT_SETTINGS.psdPercent);
-    const gpmPercent = Number(invoice.gpm_percent ?? invoice.gpmPercent ?? settings.gpmPercent ?? DEFAULT_SETTINGS.gpmPercent);
+    const currentSettings = loadSettings();
 
-    const expenseDeduction = amount * (expenseDeductionPercent / 100);
+    const amount = Number(invoice.amount || 0);
+
+    const expenseDeductionPercent =
+        Number(invoice.expense_deduction_percent)
+        || Number(currentSettings.expenseDeductionPercent)
+        || DEFAULT_SETTINGS.expenseDeductionPercent;
+
+    const vsdPercent =
+        Number(invoice.vsd_percent)
+        || Number(currentSettings.vsdPercent)
+        || DEFAULT_SETTINGS.vsdPercent;
+
+    const psdPercent =
+        Number(invoice.psd_percent)
+        || Number(currentSettings.psdPercent)
+        || DEFAULT_SETTINGS.psdPercent;
+
+    const gpmPercent =
+        Number(invoice.gpm_percent)
+        || Number(currentSettings.gpmPercent)
+        || DEFAULT_SETTINGS.gpmPercent;
+
+    const expenseDeduction =
+        amount * (expenseDeductionPercent / 100);
+
     const taxBase = amount - expenseDeduction;
-    const gpm = taxBase * (gpmPercent / 100);
+
+    const gpm =
+        taxBase * (gpmPercent / 100);
+
     const vsdPsdBase = taxBase * 0.9;
-    const vsd = vsdPsdBase * (vsdPercent / 100);
-    const psd = vsdPsdBase * (psdPercent / 100);
+
+    const vsd =
+        vsdPsdBase * (vsdPercent / 100);
+
+    const psd =
+        vsdPsdBase * (psdPercent / 100);
+
     const totalTax = gpm + vsd + psd;
+
     const netIncome = amount - totalTax;
 
     return {
@@ -445,19 +498,99 @@ function filterInvoices(searchValue) {
     return invoices.filter(invoice => invoice.client.toLowerCase().includes(query));
 }
 
+function applyFilters() {
+    const searchValue = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
+    const dateFrom = document.getElementById('dateFromInput')?.value || '';
+    const dateTo = document.getElementById('dateToInput')?.value || '';
+    const status = document.getElementById('statusFilter')?.value || '';
+
+    const filtered = invoices.filter(invoice => {
+        // Search filter
+        if (searchValue && !invoice.client.toLowerCase().includes(searchValue)) {
+            return false;
+        }
+
+        // Date range filter
+        if (dateFrom && invoice.date < dateFrom) {
+            return false;
+        }
+        if (dateTo && invoice.date > dateTo) {
+            return false;
+        }
+
+        // Status filter
+        if (status && (invoice.status || 'pending') !== status) {
+            return false;
+        }
+
+        return true;
+    });
+
+    renderInvoiceTable(filtered);
+}
+
+function renderRecentInvoicesTable(data = null) {
+    // Show only the last 3 invoices on dashboard
+    const invoicesToShow = data ? data : invoices;
+    const recentInvoices = invoicesToShow.slice(-3).reverse();
+    
+    const tbody = document.querySelector('#recentTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!recentInvoices.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nėra sąskaitų</td></tr>';
+        return;
+    }
+
+    recentInvoices.forEach(invoice => {
+        const status = invoice.status || 'pending';
+        const statusBadge = status === 'paid' 
+            ? '<span class="badge bg-success">Apmokėta</span>' 
+            : '<span class="badge bg-warning">Laukia</span>';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${invoice.client}</td>
+            <td>€ ${invoice.amount.toFixed(2)}</td>
+            <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
+            <td>${statusBadge}</td>
+            <td class="text-end">
+                <button class="btn btn-link text-danger p-1 delete-btn-recent" data-id="${invoice.id}" title="Ištrinti">
+                    <i class="fa-regular fa-trash-can"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Setup action buttons for recent table
+    document.querySelectorAll('.delete-btn-recent').forEach(button => {
+        button.addEventListener('click', function() {
+            deleteInvoice(this.dataset.id);
+        });
+    });
+}
+
 function renderInvoiceTable(data) {
     const tbody = document.querySelector('#invoiceTable tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No data</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Nėra sąskaitų</td></tr>';
         return;
     }
 
     const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
 
     data.forEach(invoice => {
+        const status = invoice.status || 'pending';
+        const statusBadge = status === 'paid' 
+            ? '<span class="badge bg-success">Apmokėta</span>' 
+            : '<span class="badge bg-warning text-dark">Laukia</span>';
+        
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>#${invoice.id}</td>
@@ -466,8 +599,9 @@ function renderInvoiceTable(data) {
             <td>${new Date(invoice.date).toLocaleDateString('lt-LT')}</td>
             <td>€ ${invoice.calculated_tax.toFixed(2)}</td>
             <td>€ ${invoice.calculated_net_income.toFixed(2)}</td>
-            <td><button class="btn btn-sm btn-outline-danger delete-btn" data-id="${invoice.id}">Delete</button></td>
-            <td><button class="btn btn-sm btn-outline-primary download-pdf-btn" data-invoice="${encodeURIComponent(JSON.stringify(invoice))}">PDF</button></td>
+            <td>${statusBadge}</td>
+            <td class="text-center"><button class="btn btn-link text-danger p-1 delete-btn" data-id="${invoice.id}" title="Ištrinti" ><i class="fa-regular fa-trash-can"></i> </button></td>
+            <td class="text-center"><button class="btn btn-link text-primary p-1 download-pdf-btn" data-invoice="${encodeURIComponent(JSON.stringify(invoice))}" title="Atsisiųsti PDF" ><i class="fa-regular fa-file-pdf"></i></button></td>
         `;
 
         if (isDarkTheme) {
@@ -503,9 +637,20 @@ function refreshDashboard() {
     saveToLocalStorage(invoices);
 
     const searchValue = document.getElementById('searchInput')?.value || '';
-    const rows = searchValue ? filterInvoices(searchValue) : invoices;
+    
+    // Dashboard page vs Archive page handling
+    const invoiceTable = document.getElementById('invoiceTable');
+    const recentTable = document.getElementById('recentTable');
+    
+    if (recentTable) {
+        // Dashboard page - show only recent 3
+        renderRecentInvoicesTable();
+    } else if (invoiceTable) {
+        // Archive page - show all with search
+        const rows = searchValue ? filterInvoices(searchValue) : invoices;
+        renderInvoiceTable(rows);
+    }
 
-    renderInvoiceTable(rows);
     updateStatistics(invoices);
     updateSummary(invoices);
     updateChart(invoices);
@@ -556,7 +701,8 @@ function addInvoice() {
         expense_deduction_percent: expenseDeduction,
         vsd_percent: vsdPercent,
         psd_percent: psdPercent,
-        gpm_percent: gpmPercent
+        gpm_percent: gpmPercent,
+        status: 'pending'
     };
 
     invoices.push(newInvoice);
@@ -567,6 +713,16 @@ function addInvoice() {
     if (document.getElementById('date')) document.getElementById('date').value = today;
 
     showToast('✨ Sąskaita sėkmingai pridėta!', 'success');
+    
+    // Close modal if it exists
+    const modalElement = document.getElementById('invoiceModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
+
     refreshDashboard();
 
     if (submitBtn) {
@@ -592,13 +748,23 @@ function deleteInvoice(invoiceId) {
     refreshDashboard();
 }
 
+function calculateChartMax(values = []) {
+    const maxValue = Math.max(...values, 0);
+
+    if (maxValue <= 0) return 100;
+
+    return Math.ceil(maxValue * 1.2);
+}
+
 function updateChart(invoices) {
     const ctx = document.getElementById('incomeChart');
+    const miniCtx = document.getElementById('miniChart');
     const pieCanvas = document.getElementById('ratioPieChart');
     const style = getComputedStyle(document.documentElement);
     const textColor = style.getPropertyValue('--chart-text').trim() || '#000000';
     const gridColor = style.getPropertyValue('--chart-grid').trim() || 'rgba(0,0,0,0.1)';
 
+    // Prepare monthly data
     const monthlyData = invoices.reduce((acc, invoice) => {
         const [year, month] = invoice.date.split('-');
         if (!year || !month) return acc;
@@ -620,6 +786,76 @@ function updateChart(invoices) {
 
     const netoTotals = sortedKeys.map(key => Number(monthlyData[key].neto.toFixed(2)));
     const taxTotals = sortedKeys.map(key => Number(monthlyData[key].taxes.toFixed(2)));
+    const incomeChartMax = calculateChartMax([
+        ...netoTotals.map((v, i) => v + taxTotals[i]),
+        ...taxTotals.map(v => v),
+        ...netoTotals.map(v => v)
+    ]);
+
+    // Mini chart - only current month data
+    if (miniCtx) {
+        const currentDate = new Date();
+        const currentKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+        const currentMonthData = monthlyData[currentKey];
+        
+        const miniLabels = currentMonthData ? [labels[sortedKeys.indexOf(currentKey)] || 'Šis mėnuo'] : ['Nėra duomenų'];
+        const miniNetoData = currentMonthData ? [currentMonthData.neto] : [0];
+        const miniTaxData = currentMonthData ? [currentMonthData.taxes] : [0];
+
+        if (miniChart) {
+            miniChart.destroy();
+        }
+
+        miniChart = new Chart(miniCtx, {
+            type: 'bar',
+            data: {
+                labels: miniLabels,
+                datasets: [{
+                    label: 'Likutis į rankas (€)',
+                    data: miniNetoData,
+                    backgroundColor: 'rgba(34, 197, 94, 0.85)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    maxBarThickness: 60,
+                }, {
+                    label: 'Mokesčiai (€)',
+                    data: miniTaxData,
+                    backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    maxBarThickness: 60,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { weight: '600' } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: textColor, font: { weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: textColor, font: { weight: '600' }, usePointStyle: true }
+                    },
+                    tooltip: {
+                        backgroundColor: style.getPropertyValue('--surface').trim(),
+                        titleColor: textColor,
+                        bodyColor: style.getPropertyValue('--muted').trim()
+                    }
+                }
+            }
+        });
+    }
 
     if (ctx) {
         if (!labels.length) {
@@ -670,13 +906,16 @@ function updateChart(invoices) {
                     y: {
                         beginAtZero: true,
                         stacked: true,
+                        max: incomeChartMax,
                         grid: {
                             color: gridColor,
                             drawBorder: false
                         },
                         ticks: {
                             color: textColor,
-                            font: { weight: '600' }
+                            font: { weight: '600' },
+                            padding: 10,
+                            callback: value => `€ ${value}`
                         }
                     }
                 },
@@ -721,6 +960,7 @@ function updateChart(invoices) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '65%',
                 plugins: {
                     legend: {
                         position: 'bottom',
@@ -743,6 +983,99 @@ function updateChart(invoices) {
                                 return `${label}: € ${value.toFixed(2)} (${percentage.toFixed(1)}%)`;
                             }
                         }
+                    }
+                }
+            }
+        });
+    }
+
+    // Yearly trend chart
+    const yearlyCtx = document.getElementById('yearlyTrendChart');
+    if (yearlyCtx) {
+        const yearlyData = invoices.reduce((acc, invoice) => {
+            const year = invoice.date.split('-')[0];
+            if (!year) return acc;
+            if (!acc[year]) acc[year] = { bruto: 0, neto: 0, taxes: 0 };
+            acc[year].bruto += invoice.amount;
+            acc[year].neto += invoice.calculated_net_income;
+            acc[year].taxes += invoice.calculated_tax;
+            return acc;
+        }, {});
+
+        const yearlyKeys = Object.keys(yearlyData).sort();
+        const yearlyLabels = yearlyKeys;
+        const yearlyNetoTotals = yearlyKeys.map(key => Number(yearlyData[key].neto.toFixed(2)));
+        const yearlyTaxTotals = yearlyKeys.map(key => Number(yearlyData[key].taxes.toFixed(2)));
+        const yearlyChartMax = calculateChartMax([
+            ...yearlyNetoTotals,
+            ...yearlyTaxTotals
+        ]);
+
+        if (yearlyChart) {
+            yearlyChart.destroy();
+        }
+
+        yearlyChart = new Chart(yearlyCtx, {
+            type: 'line',
+            data: {
+                labels: yearlyLabels.length ? yearlyLabels : ['Nėra duomenų'],
+                datasets: [{
+                    label: 'Likutis į rankas (€)',
+                    data: yearlyNetoTotals,
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 6,
+                    pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                }, {
+                    label: 'Mokesčiai (€)',
+                    data: yearlyTaxTotals,
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 6,
+                    pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: textColor, font: { weight: '600' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: yearlyChartMax,
+                        grid: {
+                            color: gridColor,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: textColor,
+                            font: { weight: '600' },
+                            padding: 10,
+                            callback: value => `€ ${value}`
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: textColor, font: { weight: '600' }, usePointStyle: true }
+                    },
+                    tooltip: {
+                        backgroundColor: style.getPropertyValue('--surface').trim(),
+                        titleColor: textColor,
+                        bodyColor: style.getPropertyValue('--muted').trim()
                     }
                 }
             }

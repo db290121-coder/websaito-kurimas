@@ -36,80 +36,189 @@
         </div>
     </nav>
     <main class="container py-5">
-        <div class="row mb-4">
+        <div class="row mb-5">
             <div class="col-12">
-                <section class="landing-card p-4 rounded-4 shadow-sm">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-                        <div>
-                            <span class="eyebrow text-uppercase text-primary fw-semibold"><i class="fa-solid fa-gear"></i> Nustatymai</span>
-                            <h1 class="display-6 mt-3 fw-bold">Mokesčių tarifų valdymas</h1>
-                            <p class="text-muted mb-0">Čia įrašykite GPM, Sodra ir kitus parametrus, kurių šie skaičiavimai naudos visose svetainės dalyse.</p>
-                        </div>
-                    </div>
-                </section>
+                <div>
+                    <h1 class="display-6 fw-bold mb-2">Nustatymai</h1>
+                    <p class="text-muted">Konfigūruokite savo profilio nustatymus, mokesčius ir sąskaitų rekvizitus.</p>
+                </div>
             </div>
         </div>
 
-        <div class="row justify-content-center">
+        <div class="row">
             <div class="col-lg-8">
-                <section class="card dashboard-card shadow-sm">
-                    <div class="card-body">
-                        <form id="settingsForm" class="row g-4">
-                            <div class="col-12">
-                                <h2 class="h5 mb-3"><i class="fa-solid fa-percent"></i> Mokesčių tarifai</h2>
-                            </div>
-                            
-                            <!-- Country/Region Selection -->
-                            <div class="col-12">
-                                <label for="countrySelect" class="form-label">Šalis / Regionas</label>
-                                <select id="countrySelect" class="form-select form-control" required>
-                                    <option value="">-- Pasirinkite šalį --</option>
-                                    <option value="LT">Lietuva (LT)</option>
-                                    <option value="CUSTOM">Custom / Global</option>
-                                </select>
-                                <small class="text-muted">Pasirinkite šalį, kad būtų automatiškai įkelti standartiniai mokesčiai. Pasirinkus "Custom", galėsite rankiniu būdu įvesti bet kokius procentinius dydžius.</small>
-                            </div>
+                <div class="tab-content">
 
-                            <!-- Lithuania-specific fields -->
-                            <div id="lithuaniaFields" class="row g-4" style="display: none;">
-                                <div class="col-md-6">
-                                    <label for="gpmPercent" class="form-label">GPM (%)</label>
-                                    <input id="gpmPercent" type="number" class="form-control" step="0.01" min="0" placeholder="15" value="15">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="expenseDeductionPercent" class="form-label">Išlaidų atskaitymas (%)</label>
-                                    <input id="expenseDeductionPercent" type="number" class="form-control" step="0.01" min="0" placeholder="30" value="30">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="vsdPercent" class="form-label">VSD (%)</label>
-                                    <input id="vsdPercent" type="number" class="form-control" step="0.01" min="0" placeholder="9" value="9">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="psdPercent" class="form-label">PSD (%)</label>
-                                    <input id="psdPercent" type="number" class="form-control" step="0.01" min="0" placeholder="6.98" value="6.98">
-                                </div>
-                            </div>
+                    <form id="settingsForm" class="row g-4">
 
-                            <!-- Custom tax fields -->
-                            <div id="customFields" class="row g-4" style="display: none;">
-                                <div class="col-md-6">
-                                    <label for="customTaxPercent" class="form-label">Mokesčio procentas (%)</label>
-                                    <input id="customTaxPercent" type="number" class="form-control" step="0.01" min="0" placeholder="0" value="0">
-                                    <small class="text-muted">Įveskite bendrą mokesčio procentą arba palikite 0, jei mokesčių nėra.</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="customExpensePercent" class="form-label">Išlaidų atskaitymas (%)</label>
-                                    <input id="customExpensePercent" type="number" class="form-control" step="0.01" min="0" placeholder="0" value="0">
-                                    <small class="text-muted">Jei nenurodyta, laikoma 0.</small>
-                                </div>
-                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">GPM (%)</label>
 
-                            <div class="col-12 text-end">
-                                <button type="submit" class="btn btn-primary px-4 py-3">Išsaugoti</button>
+                            <input
+                                type="number"
+                                step="0.01"
+                                id="gpmPercent"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Išlaidų atskaitymas (%)</label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                id="expenseDeductionPercent"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">VSD (%)</label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                id="vsdPercent"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">PSD (%)</label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                id="psdPercent"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        
+
+                    </form>
+
+                    <!-- PROFILE -->
+                    <div class="tab-pane fade show active"
+                        id="section-profile">
+
+                        <section class="card dashboard-card shadow-sm border-0">
+                            <div class="card-body">
+
+                                <h5 class="card-title mb-4">
+                                    Mano profilis
+                                </h5>
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">
+                                            Vardas
+                                        </label>
+
+                                        <input type="text"
+                                            class="form-control">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">
+                                            Pavardė
+                                        </label>
+
+                                        <input type="text"
+                                            class="form-control">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">
+                                            Individualios veiklos numeris
+                                        </label>
+
+                                        <input type="text"
+                                            class="form-control">
+                                    </div>
+
+                                </div>
+
                             </div>
-                        </form>
+                        </section>
+
                     </div>
-                </section>
+                    
+                    
+
+                    <!-- TAXES -->
+                    <div class="tab-pane fade"
+                        id="section-taxes">
+
+                        <!-- ČIA ĮKELK SAVO DABARTINĮ MOKESČIŲ BLOKĄ -->
+
+                    </div>
+
+                    <!-- REQUISITES -->
+                    <div class="tab-pane fade"
+                        id="section-requisites">
+
+                        <section class="card dashboard-card shadow-sm border-0">
+                            <div class="card-body">
+
+                                <h5 class="card-title mb-4">
+                                    Sąskaitų rekvizitai
+                                </h5>
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">
+                                            IBAN
+                                        </label>
+
+                                        <input type="text"
+                                            class="form-control"
+                                            placeholder="LTXX XXXX XXXX XXXX XXXX">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">
+                                            Bankas
+                                        </label>
+
+                                        <input type="text"
+                                            class="form-control"
+                                            placeholder="Swedbank">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">
+                                            Numatytoji valiuta
+                                        </label>
+
+                                        <select class="form-select">
+                                            <option>EUR</option>
+                                            <option>USD</option>
+                                            <option>GBP</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </section>
+
+                    </div>
+                    
+                    <div class="col-12">
+                            <button
+                                type="submit"
+                                class="btn btn-primary rounded-3 px-4 py-2"
+                            >
+                                <i class="fa-solid fa-floppy-disk me-2"></i>
+                                Išsaugoti nustatymus
+                            </button>
+                    </div>
+
+                </div>
             </div>
         </div>
     </main>
@@ -120,7 +229,7 @@
                     <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
                 </div>
                 <div class="footer-center">
-                    <p class="footer-contact-info">Kontaktas: info@freelanceflow.com</p>
+                    <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
                 </div>
                 <div class="footer-right">
                     <div class="footer-social">

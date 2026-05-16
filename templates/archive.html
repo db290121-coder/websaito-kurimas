@@ -52,17 +52,85 @@
 
         <div class="row g-4 mb-4">
             <div class="col-12">
-                <section class="card dashboard-card shadow-sm p-4">
-                    <div class="row align-items-center gy-3">
-                        <div class="col-md-8">
-                            <h2 class="h5 mb-2">Sąskaitų paieška</h2>
-                            <p class="text-muted small mb-3">Filtruokite sąskaitas pagal kliento pavadinimą.</p>
+
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+
+                        <div class="row g-3 align-items-end">
+
+                            <div class="col-lg-4">
+                                <label class="form-label fw-semibold small">
+                                    Paieška pagal klientą
+                                </label>
+
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fa-solid fa-search"></i>
+                                    </span>
+
+                                    <input type="search"
+                                        id="searchClient"
+                                        class="form-control"
+                                        placeholder="Ieškoti kliento...">
+                                </div>
+                            </div>
+
+                            <div class="col-lg-3">
+                                <label class="form-label fw-semibold small">
+                                    Nuo
+                                </label>
+
+                                <input type="date"
+                                    id="dateFrom"
+                                    class="form-control">
+                            </div>
+
+                            <div class="col-lg-3">
+                                <label class="form-label fw-semibold small">
+                                    Iki
+                                </label>
+
+                                <input type="date"
+                                    id="dateTo"
+                                    class="form-control">
+                            </div>
+
+                            <div class="col-lg-2">
+                                <label class="form-label fw-semibold small">
+                                    Būsena
+                                </label>
+
+                                <select id="statusFilter"
+                                        class="form-select">
+
+                                    <option value="">
+                                        Visos
+                                    </option>
+
+                                    <span class="badge bg-success-subtle text-success">
+                                        Apmokėta
+                                    </span>
+
+                                    <span class="badge bg-warning-subtle text-warning">
+                                        Laukia
+                                    </span>
+
+                                    <span class="badge bg-danger-subtle text-danger">
+                                        Vėluoja
+                                    </span>
+
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Atšaukta
+                                    </span>
+
+                                </select>
+                            </div>
+
                         </div>
-                        <div class="col-md-4">
-                            <input id="searchInput" type="search" class="form-control" placeholder="Ieškoti pagal klientą...">
-                        </div>
+
                     </div>
                 </section>
+
             </div>
         </div>
 
@@ -72,16 +140,17 @@
                     <div class="card-body">
                         <div class="table-responsive">
                             <table id="invoiceTable" class="table align-middle table-hover">
-                                <thead>
+                                <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
                                         <th>Klientas</th>
                                         <th>Suma</th>
                                         <th>Data</th>
-                                        <th class="tax-col">Mokesčiai</th>
-                                        <th class="net-col">Likutis</th>
+                                        <th>Mokesčiai</th>
+                                        <th>Likutis</th>
+                                        <th>Būsena</th>
                                         <th class="text-end">Veiksmai</th>
-                                        <th class="text-center" style="width: 60px;">PDF</th>
+                                        <th class="text-center">PDF</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -99,7 +168,7 @@
                     <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
                 </div>
                 <div class="footer-center">
-                    <p class="footer-contact-info">Kontaktas: info@freelanceflow.com</p>
+                    <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
                 </div>
                 <div class="footer-right">
                     <div class="footer-social">

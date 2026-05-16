@@ -11,14 +11,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body class="bg-light">
     <div id="toastContainer" class="toast-container"></div>
     <nav class="topbar">
         <div class="topbar-inner">
             <div class="brand-group">
-                <div class="brand-icon">
-                    <i class="fa-solid fa-rocket"></i>
-                </div>
+                <div class="brand-icon"><i class="fa-solid fa-rocket"></i></div>
                 <div>
                     <div class="brand-name">FreelanceFlow</div>
                     <div class="brand-tagline">Invoice & finance hub</div>
@@ -31,231 +30,240 @@
                 <li><a href="/settings.html" class="topbar-link">Nustatymai</a></li>
             </ul>
             <div class="topbar-actions">
-
-                <!-- HAMBURGER (pridėk) 
-                <button id="hamburger" class="hamburger">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
-                -->
-                
-                <!-- THEME TOGGLE (palieki) -->
-                <button id="theme-toggle" class="theme-toggle-btn">
-                    <i class="fa-solid fa-moon"></i>
-                </button>
-
+                <button id="theme-toggle" class="theme-toggle-btn"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </nav>
+
     <main class="container py-5">
-        <div class="row">
-            <div class="col-12">
-                <section class="landing-card p-4 p-lg-5 rounded-4 shadow-sm mb-5">
-                    <div class="row align-items-center gy-4">
-                        <div class="col-lg-8">
-                            <span class="eyebrow text-uppercase text-primary fw-semibold">
-                                <i class="fa-solid fa-chart-pie"></i> Freelancer Dashboard
-                            </span>
-                            <h1 class="display-5 mt-3 fw-bold">Sveiki atvykę į Freelancer Invoices</h1>
-                            <p class="lead text-muted mb-4" style="font-weight: 500;">Paprastą įrankį jūsų pajamoms sekti ir mokesčiams skaičiuoti. Pridėkite sąskaitas, stebėkite automatinį GPM skaičiavimą ir greitai tvarkykite finansus visame įrenginyje.</p>
-                            <div class="d-flex flex-wrap gap-3">
-                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary py-2 px-3">
-                                    <i class="fa-solid fa-mobile-screen"></i> Mobiliems pritaikytas
-                                </span>
-                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success py-2 px-3">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Intuityvus valdymas
-                                </span>
-                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning py-2 px-3">
-                                    <i class="fa-solid fa-calculator"></i> Automatiniai mokesčiai
-                                </span>
-                            </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-0" style="color: var(--text); font-size: 1.75rem;">Finansų apžvalga</h2>
+            </div>
+            <button type="button" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addInvoiceModal">
+                <i class="fa-solid fa-plus me-2"></i> Nauja sąskaita
+            </button>
+        </div>
+        <!-- KEY METRICS (4 Cards) -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title text-muted fw-semibold mb-0">Bendra suma</h5>
+                            <i class="fa-solid fa-euro-sign text-primary opacity-50"></i>
                         </div>
-                        <div class="col-lg-4 text-lg-end d-none d-lg-block">
-                            <div class="landing-visual p-5 rounded-4 bg-white shadow-sm">
-                                <p class="mb-1 text-muted small fw-600">🚀 Jūsų naujas finansų asistentas</p>
-                                <h2 class="h5 fw-bold mt-3">Greita, aiški ir profesionali sąskaitų apžvalga.</h2>
-                            </div>
-                        </div>
+                        <div class="stat-value" id="totalAmount">€0.00</div>
                     </div>
                 </section>
             </div>
-
-        <div class="row g-4">
-            <!-- 1. STATISTIKOS BLOKAS (Per visą plotį viršuje) -->
-            <div class="col-12 mb-4">
-                <div id="statsContainer">
-                    <div class="row">
-                        <div class="stat-card col-md-3">
-                            <div class="stat-label">Bendra suma (€)</div>
-                            <div class="stat-value" id="totalAmount">0.00</div>
+            <div class="col-md-3">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title text-muted fw-semibold mb-0">Mokesčiai</h5>
+                            <i class="fa-solid fa-percent text-warning opacity-50"></i>
                         </div>
-                        <div class="stat-card col-md-3">
-                            <div class="stat-label">Mokesčiai (€)</div>
-                            <div class="stat-value" id="totalTax" style="color: var(--warning);">0.00</div>
-                        </div>
-                        <div class="stat-card col-md-3">
-                            <div class="stat-label">Likutis į rankas (€)</div>
-                            <div class="stat-value" id="totalNet" style="color: var(--success);">0.00</div>
-                        </div>
-                        <div class="stat-card col-md-3">
-                            <div class="stat-label">Sąskaitų skaičius</div>
-                            <div class="stat-value" id="totalCount" style="color: var(--primary);">0</div>
-                        </div>
+                        <div class="stat-value text-warning" id="totalTax">€0.00</div>
                     </div>
-                </div>
+                </section>
+            </div>
+            <div class="col-md-3">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title text-muted fw-semibold mb-0">Likutis į rankas</h5>
+                            <i class="fa-solid fa-wallet text-success opacity-50"></i>
+                        </div>
+                        <div class="stat-value text-success" id="totalNet">€0.00</div>
+                    </div>
+                </section>
+            </div>
+            <div class="col-md-3">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title text-muted fw-semibold mb-0">Sąskaitų skaičius</h5>
+                            <i class="fa-solid fa-receipt text-primary opacity-50"></i>
+                        </div>
+                        <div class="stat-value text-primary" id="totalCount">0</div>
+                    </div>
+                </section>
             </div>
         </div>
 
-        <!-- 2. PAGRINDINIS TURINYS (Kairė: Forma | Dešinė: Lentelė ir Grafikas) -->
-        <div class="row g-4">
-            <div class="col-lg-4">
-                <section class="card dashboard-card form-card shadow-sm h-100">
-                    <div class="card-body d-flex flex-column">
-                        <h3 class="card-title mb-1">
-                            <i class="fa-solid fa-file-invoice"></i> Pridėti naują sąskaitą
-                        </h3>
-                        <p class="text-muted small mb-4">Greitai užpildykite formą ir stebėkite automatinį mokesčių skaičiavimą</p>
-                        
-                        <form id="invoiceForm" class="row g-3 flex-grow-1">
-                            <div class="col-12">
-                                <label for="client" class="form-label">
-                                    <i class="fa-solid fa-user-tie"></i> Klientas
-                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" title="Įmonės ar asmens pavadinimas."></i>
-                                </label>
-                                <input type="text" id="client" class="form-control shadow-sm" placeholder="pvz. UAB „Pavyzdys“" required>
-                            </div>
-                            <div class="col-12">
-                                <label for="amount" class="form-label">
-                                    <i class="fa-solid fa-euro-sign"></i> Suma
-                                    <i class="fa-solid fa-circle-info info-icon" data-bs-toggle="tooltip" title="Suma prieš mokesčius."></i>
-                                </label>
-                                <input type="number" id="amount" class="form-control shadow-sm" placeholder="0.00" min="0" step="0.01" required>
-                            </div>
-                            <div class="col-12">
-                                <label for="date" class="form-label">
-                                    <i class="fa-solid fa-calendar"></i> Data
-                                </label>
-                                <input type="date" id="date" class="form-control shadow-sm" required>
-                            </div>
-                            
-                            <!-- Išplėstiniai nustatymai -->
-                            <div class="col-12">
-                                <div class="accordion" id="advancedAccordion">
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedSettings">
-                                                <i class="fa-solid fa-sliders"></i> Mokesčių nustatymai
-                                            </button>
-                                        </h2>
-                                        <div id="advancedSettings" class="accordion-collapse collapse" data-bs-parent="#advancedAccordion">
-                                            <div class="accordion-body">
-                                                <div class="row g-3">
-                                                    <div class="col-12">
-                                                        <label class="form-label small">Išlaidų atskaitymas (%)</label>
-                                                        <input type="number" id="expenseDeduction" class="form-control form-control-sm" value="30">
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label small">VSD (%)</label>
-                                                        <input type="number" id="vsdPercent" class="form-control form-control-sm" value="9" min="0" step="0.01">
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label small">PSD (%)</label>
-                                                        <input type="number" id="psdPercent" class="form-control form-control-sm" value="6.98" min="0" step="0.01">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+        <!-- RECENT TRANSACTIONS -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="fa-solid fa-history"></i>
+                                    Paskutinės 3 operacijos
+                                </h5>
+
+                                <p class="text-muted small mb-0">
+                                    Naujausi įrašai
+                                </p>
                             </div>
 
-                            <div class="col-12 mt-auto pt-3">
-                                <button type="submit" class="btn btn-primary w-100 py-3" id="submitBtn">
-                                    <i class="fa-solid fa-plus"></i> Pridėti sąskaitą
-                                </button>
-                            </div>
-                        </form>
+                            <a href="/archive.html"
+                            class="btn btn-outline-primary btn-sm">
+                                Žiūrėti visas sąskaitas
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="recentTable" class="table align-middle table-hover small mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Klientas</th>
+                                        <th>Suma</th>
+                                        <th>Data</th>
+                                        <th>Būsena</th>
+                                        <th class="text-end">Veiksmai</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
+        </div>
 
-            <!-- Dešinė pusė -->
-            <div class="col-lg-8">
-                <div class="row g-4">
-                    <!-- Istorija -->
-                    <div class="col-12">
-                        <section class="card dashboard-card shadow-sm">
-                            <div class="card-body">
-                                <h3 class="card-title mb-1"><i class="fa-solid fa-table"></i> Sąskaitų istorija</h3>
-                                <p class="text-muted small mb-4">Paskutinių įrašų apžvalga</p>
-                                <div class="table-responsive">
-                                    <table id="invoiceTable" class="table align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Klientas</th>
-                                                <th>Suma</th>
-                                                <th>Data</th>
-                                                <th class="tax-col">Mokesčiai</th>
-                                                <th class="net-col">Likutis</th>
-                                                <th class="text-end">Veiksmai</th>
-                                                <th class="text-center" style="width: 60px;">PDF</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </section>
+        <!-- MINI CHART -->
+        <div class="row">
+            <div class="col-12">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4"><i class="fa-solid fa-chart-line"></i> Šio mėnesio grafika</h5>
+                        <div class="chart-container" style="position: relative; height: 250px;">
+                            <canvas id="miniChart"></canvas>
+                        </div>
+                        <p class="text-muted small mt-3 mb-0">
+                            <i class="fa-solid fa-info-circle"></i> 
+                            Norėdami matyti detalesnę analizę (pajamos pagal mėnesį, metų tendencijos, mokesčių proporcijos), 
+                            <a href="/analytics.html">eikite į "Gilioji analizė"</a>.
+                        </p>
                     </div>
-                    <!-- Santrauka -->
-                    <div class="col-12">
-                        <section class="card dashboard-card shadow-sm" id="summaryCard" style="display: none;">
-                            <div class="card-body">
-                                <h3 class="card-title mb-3"><i class="fa-solid fa-receipt"></i> Mokesčių santrauka</h3>
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Bendras GPM (15%)</span>
-                                            <span class="summary-value" id="summaryGPM">€ 0.00</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Vidutinis GPM %</span>
-                                            <span class="summary-value" id="summaryGPMPercent">0 %</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Bendras VSD</span>
-                                            <span class="summary-value" id="summaryVSD">€ 0.00</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Bendras PSD</span>
-                                            <span class="summary-value" id="summaryPSD">€ 0.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                    <!-- Grafikas -->
-                    <div class="col-12">
-                        <section class="card dashboard-card shadow-sm">
-                            <div class="card-body">
-                                <h3 class="card-title mb-3"><i class="fa-solid fa-chart-column"></i> Mėnesio pajamos</h3>
-                                <div class="chart-container" style="position: relative; height:300px;">
-                                    <canvas id="incomeChart"></canvas>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                </div>
+                </section>
             </div>
         </div>
     </main>
+
+    <!-- MODAL: ADD INVOICE -->
+    <div class="modal fade"
+     id="addInvoiceModal"
+     tabindex="-1"
+     aria-labelledby="addInvoiceModalLabel"
+     aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+
+                <div class="modal-header">
+                    <h5 class="modal-title"
+                        id="addInvoiceModalLabel">
+
+                        <i class="fa-solid fa-file-invoice"></i>
+                        Nauja sąskaita
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <form id="invoiceForm"
+                        class="row g-3">
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Klientas
+                            </label>
+
+                            <input type="text"
+                                id="client"
+                                class="form-control"
+                                placeholder="UAB Pavyzdys"
+                                required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Suma (€)
+                            </label>
+
+                            <input type="number"
+                                id="amount"
+                                class="form-control"
+                                placeholder="0.00"
+                                min="0"
+                                step="0.01"
+                                required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Data
+                            </label>
+
+                            <input type="date"
+                                id="date"
+                                class="form-control"
+                                required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Būsena
+                            </label>
+
+                            <select id="status"
+                                    class="form-select">
+
+                                <option value="paid">
+                                    Apmokėta
+                                </option>
+
+                                <option value="pending">
+                                    Laukia
+                                </option>
+
+                            </select>
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-light"
+                            data-bs-dismiss="modal">
+                        Atšaukti
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-primary"
+                            id="submitBtn">
+
+                        <i class="fa-solid fa-plus"></i>
+                        Pridėti sąskaitą
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-content">
@@ -263,7 +271,7 @@
                     <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
                 </div>
                 <div class="footer-center">
-                    <p class="footer-contact-info">Kontaktas: info@freelanceflow.com</p>
+                    <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
                 </div>
                 <div class="footer-right">
                     <div class="footer-social">
@@ -283,5 +291,107 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <div class="modal fade" id="addInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">
+                        Nauja sąskaita
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <form id="invoiceForm" class="row g-3">
+
+                        <div class="col-12">
+                            <label class="form-label">Klientas</label>
+
+                            <input
+                                type="text"
+                                id="client"
+                                class="form-control rounded-3"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Suma (€)</label>
+
+                            <input
+                                type="number"
+                                id="amount"
+                                class="form-control rounded-3"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Data</label>
+
+                            <input
+                                type="date"
+                                id="date"
+                                class="form-control rounded-3"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                Išlaidų atskaitymas %
+                            </label>
+
+                            <input
+                                type="number"
+                                id="expenseDeduction"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">VSD %</label>
+
+                            <input
+                                type="number"
+                                id="vsdPercent"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">PSD %</label>
+
+                            <input
+                                type="number"
+                                id="psdPercent"
+                                class="form-control rounded-3"
+                            >
+                        </div>
+
+                        <div class="col-12">
+                            <button
+                                type="submit"
+                                id="submitBtn"
+                                class="btn btn-primary w-100 rounded-3 py-2"
+                            >
+                                <i class="fa-solid fa-plus me-2"></i>
+                                Pridėti sąskaitą
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

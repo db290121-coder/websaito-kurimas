@@ -38,40 +38,106 @@
     <main class="container py-5">
         <div class="row mb-4">
             <div class="col-12">
-                <section class="landing-card p-4 rounded-4 shadow-sm">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-                        <div>
-                            <span class="eyebrow text-uppercase text-primary fw-semibold"><i class="fa-solid fa-chart-simple"></i> Gilioji analizė</span>
-                            <h1 class="display-6 mt-3 fw-bold">Mokesčių ir pelno santykio rodikliai</h1>
-                            <p class="text-muted mb-0">Čia matote bendrą pajamų grafiką ir pelno bei mokesčių santykį procentais.</p>
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+                    <div>
+                        <h1 class="display-6 fw-bold mb-2">Gilioji analizė</h1>
+                        <p class="text-muted">Detalūs finansiniai rodikliai, tendencijos ir strateginės analitikos.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- YEARLY TREND -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <section class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4"><i class="fa-solid fa-chart-line"></i> Metinė tendencija</h5>
+                        <div class="chart-container" style="position: relative; min-height: 350px;">
+                            <canvas id="yearlyTrendChart"></canvas>
                         </div>
                     </div>
                 </section>
             </div>
         </div>
 
+        <!-- MONTHLY COMPARISON & PIE CHART -->
         <div class="row g-4">
-            <div class="col-lg-7">
-                <section class="card dashboard-card shadow-sm">
+
+            <!-- DONUT CHART -->
+            <div class="col-lg-4">
+
+                <section class="card dashboard-card shadow-sm border-0 h-100">
                     <div class="card-body">
-                        <h2 class="h5 mb-3"><i class="fa-solid fa-chart-column"></i> Mėnesio pajamos</h2>
-                        <div class="chart-container" style="position: relative; min-height: 320px;">
-                            <canvas id="incomeChart"></canvas>
+
+                        <h5 class="card-title mb-4">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            Mokesčių išskaidymas
+                        </h5>
+
+                        <div class="chart-container"
+                            style="position: relative; min-height: 320px;">
+
+                            <canvas id="taxDonutChart"></canvas>
+
                         </div>
+
                     </div>
                 </section>
+
             </div>
-            <div class="col-lg-5">
-                <section class="card dashboard-card shadow-sm">
+
+            <!-- MONTHLY INDICATOR -->
+            <div class="col-lg-4">
+
+                <section class="card dashboard-card shadow-sm border-0 h-100">
                     <div class="card-body">
-                        <h2 class="h5 mb-3"><i class="fa-solid fa-chart-pie"></i> Mokesčių ir grynojo pelno santykis</h2>
-                        <div class="chart-container" style="position: relative; min-height: 320px;">
-                            <canvas id="ratioPieChart"></canvas>
+
+                        <h5 class="card-title mb-4">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                            Pajamų pokytis
+                        </h5>
+
+                        <div class="text-center py-5">
+
+                            <h2 class="display-4 fw-bold text-success">
+                                +18%
+                            </h2>
+
+                            <p class="text-muted mb-0">
+                                Palyginus su praėjusiu mėnesiu
+                            </p>
+
                         </div>
-                        <p class="text-muted small mt-3">Šis diagrama rodo visų sąskaitų mokesčių ir neto pelno proporcijas.</p>
+
                     </div>
                 </section>
+
             </div>
+
+            <!-- YEARLY CURVE -->
+            <div class="col-lg-4">
+
+                <section class="card dashboard-card shadow-sm border-0 h-100">
+                    <div class="card-body">
+
+                        <h5 class="card-title mb-4">
+                            <i class="fa-solid fa-chart-line"></i>
+                            Metinė pajamų kreivė
+                        </h5>
+
+                        <div class="chart-container"
+                            style="position: relative; min-height: 320px;">
+
+                            <canvas id="yearlyIncomeCurve"></canvas>
+
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+
         </div>
     </main>
     <footer class="footer">
@@ -81,7 +147,7 @@
                     <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
                 </div>
                 <div class="footer-center">
-                    <p class="footer-contact-info">Kontaktas: info@freelanceflow.com</p>
+                    <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
                 </div>
                 <div class="footer-right">
                     <div class="footer-social">
@@ -91,13 +157,6 @@
                         <a href="https://github.com/DaniilBolshoj" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
                     </div>
                 </div>
-            </div>
-        </div>
-    </footer>
-                <a href="https://t.me/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
-                <a href="https://twitter.com/DaniilB287715" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
-                <a href="https://linkedin.com/in/jusu_vardotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-                <a href="https://github.com/DaniilBolshoj" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
             </div>
         </div>
     </footer>

@@ -26,27 +26,34 @@
 }
 
 [data-theme="dark"] {
-    --bg: linear-gradient(135deg, #0C0C0C 0%, #121212 100%);
-    --bg-color: #0C0C0C;
-    --surface: #121212;
-    --card-bg: #1E1E1E;
-    --input-bg: #2C2C2C;
-    --table-bg: #1E1E1E;
+    --bg: linear-gradient(135deg, #121212 0%, #181818 100%);
+    --bg-color: #121212;
+    --surface: #1e1e1e;
+    --card-bg: #1e1e1e;
+    --table-bg: #1e1e1e;
+    --input-bg: #242424;
+
     --primary: #6366f1;
     --primary-dark: #4f46e5;
     --primary-soft: #1e293b;
-    --muted: #94a3b8;
-    --text: #FAF9F6;
+
+    --muted: #b0b0b0;
+
+    --text: #f5f5f5;
     --text-color: #FAF9F6;
     --label-color: #f8fafc;
+
     --danger: #ef4444;
     --success: #22c55e;
     --warning: #ec4899;
+
     --border: rgba(255, 255, 255, 0.1);
     --border-color: #4a5568;
+
     --shadow-sm: none;
     --shadow-md: none;
     --shadow-lg: none;
+
     --chart-text: #FAF9F6;
     --chart-grid: rgba(255, 255, 255, 0.1);
 }
@@ -58,6 +65,16 @@
     color: var(--text-color) !important;
     border: 1px solid var(--border) !important;
     box-shadow: none !important;
+}
+
+[data-theme="dark"] .form-control {
+    background: #242424;
+    border-color: #333;
+    color: #fff;
+}
+
+[data-theme="dark"] .table {
+    color: #f5f5f5;
 }
 
 * {
@@ -123,7 +140,9 @@ main {
     justify-content: center;
 
     transition: all 0.3s ease;
-
+    
+    padding: 0.8rem 0;
+    min-height: auto;
     padding-top: 12px;
     padding-bottom: 12px;
 }
@@ -209,6 +228,20 @@ main {
 
 .topbar-menu a:hover, .topbar-menu a.active {
     color: var(--primary);
+}
+
+[data-theme="dark"] .topbar-menu a.active,
+[data-theme="dark"] .topbar-menu .nav-link.active {
+    color: #a389f4 !important;
+    border-bottom: 2px solid #a389f4;
+    text-shadow: 0 0 10px rgba(163, 137, 244, 0.4);
+}
+
+[data-theme="dark"] .topbar-menu a:hover,
+[data-theme="dark"] .topbar-menu .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
 }
 
 .top-menu {
@@ -572,11 +605,11 @@ footer {
 }
 
 .table tbody tr:nth-child(even) {
-    background: rgba(79, 70, 229, 0.02);
+    background: rgba(79, 70, 229, 0.01);
 }
 
 .table tbody tr:hover {
-    background: rgba(79, 70, 229, 0.1);
+    background: rgba(79, 70, 229, 0.05);
     color: var(--text-color);
     transform: none;
 }
@@ -632,7 +665,6 @@ footer {
     border-radius: 1.25rem;
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
-    text-align: center;
     animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--text-color) !important;
@@ -640,13 +672,12 @@ footer {
 
 .stat-card:hover {
     box-shadow: var(--shadow-md);
-    transform: translateY(-6px);
-    border-color: rgba(79, 70, 229, 0.2);
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(217, 70, 239, 0.08) 100%);
+    transform: translateY(-3px);
+    border-color: rgba(79, 70, 229, 0.15);
 }
 
 .summary-item {
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(217, 70, 239, 0.02) 100%);
+    background: var(--card-bg);
     border: 1.5px solid var(--border);
     border-radius: 1rem;
     padding: 1.25rem;
@@ -657,9 +688,9 @@ footer {
 }
 
 .summary-item:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-4px);
-    border-color: rgba(79, 70, 229, 0.2);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+    border-color: rgba(79, 70, 229, 0.15);
 }
 
 .summary-label {
@@ -861,8 +892,8 @@ footer {
 [data-theme="dark"] .settings-group,
 [data-theme="dark"] .accordion-item,
 [data-theme="dark"] .dropdown-menu {
-    background: #1a1a1a !important;
-    background-color: #1a1a1a !important;
+    background: #1e1e1e !important;
+    background-color: #1e1e1e !important;
     color: #FAF9F6 !important;
     border-color: rgba(255, 255, 255, 0.08) !important;
 }
@@ -881,9 +912,12 @@ footer {
 /* Dropdowns and selects */
 [data-theme="dark"] select,
 [data-theme="dark"] .form-select {
-    background-color: #2a2a2a !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: #2d2d2d !important;
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+
+    background-image:
+    url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e") !important;
 }
 
 /* Form inputs */
@@ -899,14 +933,20 @@ footer {
 [data-theme="dark"] label,
 [data-theme="dark"] .form-label,
 [data-theme="dark"] .settings-label,
-[data-theme="dark"] .dropdown-label {
-    color: #ffffff !important;
+[data-theme="dark"] .dropdown-label 
+[data-theme="dark"] .form-text,
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .hint-text,
+[data-theme="dark"] small {
+    color: #94a3b8 !important;
 }
 
 /* Placeholders */
 [data-theme="dark"] input::placeholder,
-[data-theme="dark"] textarea::placeholder {
-    color: #9ca3af !important;
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] ::placeholder {
+    color: #64748b !important;
+    opacity: 1;
 }
 
 /* Text elements */
@@ -1016,4 +1056,49 @@ footer {
     main {
         padding: 1rem;
     }
+}
+
+/* 8. Suvienodinti visus rounded kampus */
+.card,
+.btn,
+.form-control,
+.form-select,
+.modal-content,
+.table,
+.input-group-text {
+    border-radius: 1.25rem !important; /* Naudojame 1.25rem modernesniam įvaizdžiui */
+    background-color: var(--card-bg) !important;
+}
+
+/* Teksto spalvą nustatom atskirai, kad tamsiuoju režimu ji galėtų persirašyti */
+.card,
+.btn,
+.form-control,
+.form-select,
+.modal-content,
+.table,
+.input-group-text {
+    color: var(--text-color); /* Pašalintas !important, kad leistų tekstui pabaltuoti */
+}
+
+/* Kai body turi .dark-mode klasę, priverstinai pakeičiame tekstą į šviesų šiems elementams */
+body.dark-mode .card,
+body.dark-mode .btn,
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode .modal-content,
+body.dark-mode .table,
+body.dark-mode .input-group-text {
+    color: #ffffff !important; /* Pakeičia tekstą į baltą tik tamsiuoju režimu */
+}
+
+/* 9. Papildomas UX pagerinimas – hover efektas ikonoms/nuorodoms */
+.btn-link {
+    transition: all 0.2s ease;
+    text-decoration: none; /* Nuima standartinį pabraukimą */
+}
+
+.btn-link:hover {
+    transform: scale(1.05); /* 1.05 veikia subtiliau */
+    opacity: 0.85;
 }
