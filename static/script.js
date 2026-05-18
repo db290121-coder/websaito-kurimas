@@ -274,6 +274,8 @@ function normalizeInvoice(invoice) {
     const finances = calculateTaxValues(invoice);
     return {
         ...invoice,
+        client: invoice.client || invoice.client_name || '',
+        client_name: invoice.client_name || invoice.client || '',
         calculated_tax: finances.totalTax,
         calculated_net_income: finances.netIncome,
         calculated_gpm: finances.gpm,
@@ -530,9 +532,13 @@ function applyFilters() {
 }
 
 function renderRecentInvoicesTable(data = null) {
-    // Show only the last 3 invoices on dashboard
+    // Show only current month invoices on dashboard
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const invoicesToShow = data ? data : invoices;
-    const recentInvoices = invoicesToShow.slice(-3).reverse();
+    const recentInvoices = invoicesToShow
+        .filter(inv => inv.date && inv.date.startsWith(currentYearMonth))
+        .slice(-3).reverse();
     
     const tbody = document.querySelector('#recentTable tbody');
     if (!tbody) return;
@@ -645,6 +651,8 @@ function refreshDashboard() {
     if (recentTable) {
         // Dashboard page - show only recent 3
         renderRecentInvoicesTable();
+        // Update dashboard cards with current month data
+        updateDashboardCards(invoices);
     } else if (invoiceTable) {
         // Archive page - show all with search
         const rows = searchValue ? filterInvoices(searchValue) : invoices;
@@ -655,6 +663,35 @@ function refreshDashboard() {
     updateSummary(invoices);
     updateChart(invoices);
     setupTooltips();
+}
+
+function updateDashboardCards(allInvoices) {
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    const monthInvoices = allInvoices.filter(inv => {
+        return inv.date && inv.date.startsWith(currentYearMonth);
+    });
+
+    let totalAmount = 0;
+    let totalTax = 0;
+    let totalNet = 0;
+
+    monthInvoices.forEach(invoice => {
+        totalAmount += Number(invoice.amount || 0);
+        totalTax += Number(invoice.calculated_tax || 0);
+        totalNet += Number(invoice.calculated_net_income || 0);
+    });
+
+    const totalAmountEl = document.getElementById('totalAmount');
+    const totalTaxEl = document.getElementById('totalTax');
+    const totalNetEl = document.getElementById('totalNet');
+    const totalCountEl = document.getElementById('totalCount');
+
+    if (totalAmountEl) totalAmountEl.textContent = `€ ${totalAmount.toFixed(2)}`;
+    if (totalTaxEl) totalTaxEl.textContent = `€ ${totalTax.toFixed(2)}`;
+    if (totalNetEl) totalNetEl.textContent = `€ ${totalNet.toFixed(2)}`;
+    if (totalCountEl) totalCountEl.textContent = monthInvoices.length;
 }
 
 function addInvoice() {
@@ -693,43 +730,47 @@ function addInvoice() {
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pridedama...';
     }
 
-    const newInvoice = {
-        id: nextId++,
-        client: client,
-        amount: parseFloat(amount),
-        date: date,
-        expense_deduction_percent: expenseDeduction,
-        vsd_percent: vsdPercent,
-        psd_percent: psdPercent,
-        gpm_percent: gpmPercent,
-        status: 'pending'
-    };
+    fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            client_name: client,
+            amount: parseFloat(amount),
+            date: date,
+            expense_deduction_percent: expenseDeduction,
+            vsd_percent: vsdPercent,
+            psd_percent: psdPercent,
+            status: document.getElementById('status')?.value || 'pending'
+        })
+    })
+    .then(res => res.json())
+    .then(() => {
+        document.getElementById('invoiceForm')?.reset();
+        const today = new Date().toISOString().split('T')[0];
+        if (document.getElementById('date')) document.getElementById('date').value = today;
 
-    invoices.push(newInvoice);
-    saveToLocalStorage(invoices);
+        showToast('✨ Sąskaita sėkmingai pridėta!', 'success');
 
-    document.getElementById('invoiceForm')?.reset();
-    const today = new Date().toISOString().split('T')[0];
-    if (document.getElementById('date')) document.getElementById('date').value = today;
-
-    showToast('✨ Sąskaita sėkmingai pridėta!', 'success');
-    
-    // Close modal if it exists
-    const modalElement = document.getElementById('invoiceModal');
-    if (modalElement) {
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
+        // Close modal
+        const modalEl = document.getElementById('addInvoiceModal') || document.getElementById('invoiceModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
         }
-    }
 
-    refreshDashboard();
-
-    if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('loading-btn');
-        submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Pridėti sąskaitą';
-    }
+        loadInvoices();
+    })
+    .catch(err => {
+        console.error('Failed to save invoice:', err);
+        showToast('❌ Klaida išsaugant sąskaitą', 'error');
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading-btn');
+            submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Pridėti sąskaitą';
+        }
+    });
 }
 
 function deleteInvoice(invoiceId) {
@@ -737,15 +778,16 @@ function deleteInvoice(invoiceId) {
         return;
     }
 
-    // Remove from local array
-    invoices = invoices.filter(inv => inv.id != invoiceId);
-
-    // Save to localStorage
-    saveToLocalStorage(invoices);
-
-    showToast('🗑️ Sąskaita sėkmingai ištrinta!', 'success');
-    
-    refreshDashboard();
+    fetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(() => {
+            showToast('🗑️ Sąskaita sėkmingai ištrinta!', 'success');
+            loadInvoices();
+        })
+        .catch(err => {
+            console.error('Failed to delete invoice:', err);
+            showToast('❌ Klaida trinant sąskaitą', 'error');
+        });
 }
 
 function calculateChartMax(values = []) {
@@ -1093,5 +1135,26 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Initialize dashboard on script load
-//refreshDashboard();
+async function loadInvoices() {
+    try {
+        const response = await fetch('/api/invoices');
+
+        const data = await response.json();
+
+        // IMPORTANT
+        invoices = data.map(normalizeInvoice);
+
+        saveToLocalStorage(invoices);
+
+        // IMPORTANT - refreshDashboard handles card updates with current month filter
+        refreshDashboard();
+
+    } catch (error) {
+        console.error('Failed to load invoices:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadInvoices();
+    refreshDashboard();
+});

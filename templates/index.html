@@ -53,7 +53,7 @@
                             <h5 class="card-title text-muted fw-semibold mb-0">Bendra suma</h5>
                             <i class="fa-solid fa-euro-sign text-primary opacity-50"></i>
                         </div>
-                        <div class="stat-value" id="totalAmount">€0.00</div>
+                        <div class="stat-value" id="totalAmount">€{{ "%.2f"|format(total_amount) }}</div>
                     </div>
                 </section>
             </div>
@@ -64,7 +64,7 @@
                             <h5 class="card-title text-muted fw-semibold mb-0">Mokesčiai</h5>
                             <i class="fa-solid fa-percent text-warning opacity-50"></i>
                         </div>
-                        <div class="stat-value text-warning" id="totalTax">€0.00</div>
+                        <div class="stat-value text-warning" id="totalTax">€{{ "%.2f"|format(total_taxes) }}</div>
                     </div>
                 </section>
             </div>
@@ -75,7 +75,7 @@
                             <h5 class="card-title text-muted fw-semibold mb-0">Likutis į rankas</h5>
                             <i class="fa-solid fa-wallet text-success opacity-50"></i>
                         </div>
-                        <div class="stat-value text-success" id="totalNet">€0.00</div>
+                        <div class="stat-value text-success" id="totalNet">€{{ "%.2f"|format(total_net_income) }}</div>
                     </div>
                 </section>
             </div>
@@ -86,7 +86,7 @@
                             <h5 class="card-title text-muted fw-semibold mb-0">Sąskaitų skaičius</h5>
                             <i class="fa-solid fa-receipt text-primary opacity-50"></i>
                         </div>
-                        <div class="stat-value text-primary" id="totalCount">0</div>
+                        <div class="stat-value text-primary" id="totalCount">{{ invoice_count }}</div>
                     </div>
                 </section>
             </div>
@@ -291,107 +291,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <div class="modal fade" id="addInvoiceModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-4 border-0 shadow-lg">
-
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">
-                        Nauja sąskaita
-                    </h5>
-
-                    <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                    ></button>
-                </div>
-
-                <div class="modal-body">
-
-                    <form id="invoiceForm" class="row g-3">
-
-                        <div class="col-12">
-                            <label class="form-label">Klientas</label>
-
-                            <input
-                                type="text"
-                                id="client"
-                                class="form-control rounded-3"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Suma (€)</label>
-
-                            <input
-                                type="number"
-                                id="amount"
-                                class="form-control rounded-3"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Data</label>
-
-                            <input
-                                type="date"
-                                id="date"
-                                class="form-control rounded-3"
-                                required
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">
-                                Išlaidų atskaitymas %
-                            </label>
-
-                            <input
-                                type="number"
-                                id="expenseDeduction"
-                                class="form-control rounded-3"
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">VSD %</label>
-
-                            <input
-                                type="number"
-                                id="vsdPercent"
-                                class="form-control rounded-3"
-                            >
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">PSD %</label>
-
-                            <input
-                                type="number"
-                                id="psdPercent"
-                                class="form-control rounded-3"
-                            >
-                        </div>
-
-                        <div class="col-12">
-                            <button
-                                type="submit"
-                                id="submitBtn"
-                                class="btn btn-primary w-100 rounded-3 py-2"
-                            >
-                                <i class="fa-solid fa-plus me-2"></i>
-                                Pridėti sąskaitą
-                            </button>
-                        </div>
-
-                    </form>
-
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

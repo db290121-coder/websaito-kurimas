@@ -127,21 +127,97 @@ def calculate_finances(amount, expense_deduction_percent=30.0, vsd_percent=9.0, 
 @app.route('/')
 @app.route('/index.html')
 def index():
-    return render_template('index.html')
+    with get_db() as conn:
+        invoices = conn.execute('SELECT * FROM invoices').fetchall()
+
+    total_amount = 0
+    total_taxes = 0
+    total_net_income = 0
+    invoice_count = len(invoices)
+
+    for row in invoices:
+        invoice = dict(row)
+
+        amount = float(invoice.get('amount', 0) or 0)
+
+        # jei senos sąskaitos neturi tax/net reikšmių
+        if invoice.get('tax_paid') is None or invoice.get('net_income') is None:
+            finances = calculate_finances(
+                amount,
+                invoice.get('expense_deduction_percent', 30.0),
+                invoice.get('vsd_percent', 9.0),
+                invoice.get('psd_percent', 6.98)
+            )
+
+            tax_paid = finances['tax_paid']
+            net_income = finances['net_income']
+
+        else:
+            tax_paid = float(invoice.get('tax_paid', 0) or 0)
+            net_income = float(invoice.get('net_income', 0) or 0)
+
+        total_amount += amount
+        total_taxes += tax_paid
+        total_net_income += net_income
+
+    return render_template(
+        'index.html',
+        total_amount=round(total_amount, 2),
+        total_taxes=round(total_taxes, 2),
+        total_net_income=round(total_net_income, 2),
+        invoice_count=invoice_count
+    )
 
 @app.route('/archive.html')
 def archive():
-    return render_template('archive.html')
+    with get_db() as conn:
+        invoices = conn.execute('SELECT * FROM invoices').fetchall()
+    return render_template('archive.html', invoices=invoices)
 
 @app.route('/analytics.html')
 def analytics():
-    return render_template('analytics.html')
+    with get_db() as conn:
+        invoices = conn.execute('SELECT * FROM invoices').fetchall()
+    
+    # Prepare data for charts
+    monthly_data = {}
+    for row in invoices:
+        invoice = dict(row)
+        date = invoice['date']
+        amount = float(invoice.get('amount', 0) or 0)
+        tax_paid = float(invoice.get('tax_paid', 0) or 0)
+        net_income = float(invoice.get('net_income', 0) or 0)
+
+        month = datetime.strptime(date, '%Y-%m-%d').strftime('%Y-%m')
+        if month not in monthly_data:
+            monthly_data[month] = {'amount': 0, 'tax_paid': 0, 'net_income': 0}
+        
+        monthly_data[month]['amount'] += amount
+        monthly_data[month]['tax_paid'] += tax_paid
+        monthly_data[month]['net_income'] += net_income
+
+    # Convert to sorted lists for charting
+    sorted_months = sorted(monthly_data.keys())
+    amounts = [round(monthly_data[m]['amount'], 2) for m in sorted_months]
+    taxes = [round(monthly_data[m]['tax_paid'], 2) for m in sorted_months]
+    net_incomes = [round(monthly_data[m]['net_income'], 2) for m in sorted_months]
+
+    return render_template(
+        'analytics.html',
+        months=sorted_months,
+        amounts=amounts,
+        taxes=taxes,
+        net_incomes=net_incomes
+    )
 
 @app.route('/settings.html')
 def settings():
-    return render_template('settings.html')
+    with get_db() as conn:
+        settings = conn.execute('SELECT * FROM tax_settings').fetchall()
+    return render_template('settings.html', settings=settings)
 
 @app.route('/api/invoices', methods=['GET', 'POST'])
+@csrf.exempt
 def invoices():
     if request.method == 'POST':
         data = request.get_json()
@@ -194,6 +270,7 @@ def invoices():
         return jsonify(result)
 
 @app.route('/api/invoices/<int:invoice_id>', methods=['DELETE'])
+@csrf.exempt
 def delete_invoice(invoice_id):
     with get_db() as conn:
         cursor = conn.execute('DELETE FROM invoices WHERE id = ?', (invoice_id,))

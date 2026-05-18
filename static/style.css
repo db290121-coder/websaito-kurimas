@@ -950,6 +950,7 @@ footer {
 }
 
 /* Text elements */
+
 [data-theme="dark"] td,
 [data-theme="dark"] th,
 [data-theme="dark"] span,
@@ -1058,47 +1059,153 @@ footer {
     }
 }
 
-/* 8. Suvienodinti visus rounded kampus */
-.card,
+/* 8. Suvienodinti visus rounded kampus 
 .btn,
-.form-control,
-.form-select,
-.modal-content,
-.table,
-.input-group-text {
-    border-radius: 1.25rem !important; /* Naudojame 1.25rem modernesniam įvaizdžiui */
-    background-color: var(--card-bg) !important;
-}
-
-/* Teksto spalvą nustatom atskirai, kad tamsiuoju režimu ji galėtų persirašyti */
-.card,
-.btn,
-.form-control,
-.form-select,
-.modal-content,
-.table,
-.input-group-text {
-    color: var(--text-color); /* Pašalintas !important, kad leistų tekstui pabaltuoti */
-}
-
-/* Kai body turi .dark-mode klasę, priverstinai pakeičiame tekstą į šviesų šiems elementams */
-body.dark-mode .card,
-body.dark-mode .btn,
-body.dark-mode .form-control,
-body.dark-mode .form-select,
-body.dark-mode .modal-content,
-body.dark-mode .table,
-body.dark-mode .input-group-text {
-    color: #ffffff !important; /* Pakeičia tekstą į baltą tik tamsiuoju režimu */
-}
-
-/* 9. Papildomas UX pagerinimas – hover efektas ikonoms/nuorodoms */
+.btn-primary,
+.btn-outline-danger,
 .btn-link {
-    transition: all 0.2s ease;
-    text-decoration: none; /* Nuima standartinį pabraukimą */
+    color: var(--bg-color) !important;
+}
+*/
+
+.btn-primary {
+    color: #ffffff !important;
 }
 
-.btn-link:hover {
-    transform: scale(1.05); /* 1.05 veikia subtiliau */
-    opacity: 0.85;
+.btn-outline-primary {
+    color: var(--primary) !important;
+}
+
+.btn-outline-danger {
+    color: var(--danger) !important;
+}
+
+.btn-secondary,
+.btn-outline-secondary {
+    color: var(--text-color) !important;
+}
+
+.modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--border) !important;
+}
+
+.modal-title {
+    color: var(--text-color) !important;
+}
+
+/* CANCEL BUTTON FIX */
+.modal .btn-secondary {
+    background: #e5e7eb !important;
+    border-color: #d1d5db !important;
+    color: #111827 !important;
+}
+
+[data-theme="dark"] .modal .btn-secondary {
+    background: #2a2a2a !important;
+    border-color: #3a3a3a !important;
+    color: #ffffff !important;
+}
+
+.btn-outline-primary {
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+[data-theme="light"] .btn-primary {
+    color: var(--bg-color) !important;
+}
+
+[data-theme="light"] .btn-outline-primary {
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+[data-theme="light"] .btn-primary:hover {
+    color: var(--bg-color) !important;
+}
+
+[data-theme="light"] .btn-outline-primary:hover{
+    color: var(--bg-color) !important;
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+/* SETTINGS PAGE SPACING FIX */
+.settings-container,
+.settings-card,
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.settings-card {
+    padding: 2rem;
+    margin-top: 1.5rem;
+}
+
+.settings-card .form-control,
+.settings-card .form-select {
+    margin-top: 0.5rem;
+}
+
+.settings-card .row {
+    row-gap: 1.5rem;
+}
+
+/* PROFILE BLOCK FIX */
+.profile-section {
+    margin-top: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+}
+
+.profile-section .row {
+    row-gap: 1.5rem;
+}
+
+/* BUTTON SPACING */
+.btn-primary {
+    padding: 0.9rem 2rem;
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+/* DARK MODE BUTTONS */
+[data-theme="dark"] .btn-primary{
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+[data-theme="dark"] .btn-outline-primary {
+    color: #a5b4fc !important;
+    border-color: #6366f1 !important;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    background: #6366f1 !important;
+    color: #000000 !important;
+}
+
+[data-theme="dark"] .modal-content {
+    background: var(--bg-color) !important;
+    color: #ffffff !important;
 }
