@@ -21,8 +21,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const menu = document.querySelector('.topbar-menu');
 
     if (hamburger && menu) {
-        hamburger.addEventListener('click', () => {
-            menu.classList.toggle('active');
+        hamburger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = menu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', isOpen);
+            hamburger.innerHTML = isOpen
+                ? '<i class="fa-solid fa-xmark"></i>'
+                : '<i class="fa-solid fa-bars"></i>';
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!hamburger.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+            }
+        });
+
+        // Close menu when a link is clicked
+        menu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                menu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+            });
         });
     }
 

@@ -89,7 +89,7 @@ html {
 
 body {
     margin: 0;
-    padding-top: 80px;
+    padding-top: 78px;
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color) !important;
     color: var(--text) !important;
@@ -149,6 +149,11 @@ main {
 
 [data-theme="dark"] .topbar {
     background: rgba(12, 12, 12, 0.92);
+}
+
+[data-theme="dark"] .topbar-menu {
+    background: #1a1a1a;
+    border-bottom-color: rgba(255,255,255,0.08);
 }
 
 .topbar.shrink {
@@ -821,6 +826,11 @@ footer {
     color: #ffffff !important;
 }
 
+@keyframes slideDownMenu {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes slideIn {
     from {
         opacity: 0;
@@ -987,6 +997,11 @@ footer {
     .toast-container {
         left: 1rem;
         right: 1rem;
+        top: 70px;
+    }
+
+    .toast {
+        width: 100%;
     }
 
     .table {
@@ -1013,16 +1028,61 @@ footer {
 
     .topbar {
         height: auto;
-        min-height: 78px;
-        padding: 14px 18px;
+        min-height: 64px;
+        padding: 0 1rem;
+    }
+
+    .topbar-inner {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        height: 64px;
     }
 
     .topbar-menu {
         display: none;
+        position: fixed;
+        top: 64px;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 0.5rem 0;
+        z-index: 999;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        animation: slideDownMenu 0.22s ease;
     }
 
     .topbar-menu.active {
         display: flex;
+    }
+
+    .topbar-menu li {
+        width: 100%;
+    }
+
+    .topbar-menu a.topbar-link {
+        display: block;
+        padding: 0.9rem 1.5rem;
+        font-size: 1rem;
+        border-radius: 0;
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .topbar-menu a.topbar-link:hover,
+    .topbar-menu a.topbar-link.active {
+        background: var(--primary-soft);
+        border-left-color: var(--primary);
+        padding-left: 1.75rem;
+    }
+
+    [data-theme="dark"] .topbar-menu a.topbar-link:hover,
+    [data-theme="dark"] .topbar-menu a.topbar-link.active {
+        background: rgba(99,102,241,0.12);
+        border-left-color: #a389f4;
     }
 
     .hamburger {
@@ -1056,6 +1116,90 @@ footer {
 
     main {
         padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .display-6 {
+        font-size: 1.4rem !important;
+    }
+
+    /* Dashboard cards equal height on mobile */
+    .col-md-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    /* Table horizontal scroll */
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        border-radius: 1rem;
+    }
+
+    /* Modal full-width on mobile */
+    .modal-dialog {
+        margin: 0.75rem;
+    }
+
+    /* Chart min height */
+    .chart-container {
+        min-height: 200px !important;
+    }
+
+    /* Settings cards */
+    .col-lg-4, .col-lg-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Analytics grid */
+    .col-lg-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Button full width on small screens */
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Input group fix */
+    .input-group .input-group-text {
+        border-radius: 0 1rem 1rem 0 !important;
+    }
+    .input-group .form-control {
+        border-radius: 1rem 0 0 1rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .col-md-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .stat-value {
+        font-size: 1.3rem;
+    }
+
+    .topbar-inner {
+        gap: 0.5rem;
+    }
+
+    .brand-tagline {
+        display: none;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .footer-social {
+        justify-content: center;
     }
 }
 
@@ -1208,4 +1352,23 @@ footer {
 [data-theme="dark"] .modal-content {
     background: var(--bg-color) !important;
     color: #ffffff !important;
+}
+.brand-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-color);
+    line-height: 1.1;
+}
+
+.brand-tagline {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.1;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
 }

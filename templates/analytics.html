@@ -28,7 +28,10 @@
                 <li><a href="/analytics.html" class="topbar-link active">Gilioji analizė</a></li>
                 <li><a href="/settings.html" class="topbar-link">Nustatymai</a></li>
             </ul>
-            <div class="topbar-actions">
+            <div class="topbar-actions" style="display:flex;align-items:center;gap:0.5rem;">
+                <button id="hamburger" class="hamburger" aria-label="Meniu" aria-expanded="false">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
                 <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Dark Mode">
                     <i class="fa-solid fa-moon"></i>
                 </button>
@@ -100,7 +103,9 @@
 
                         <div class="text-center py-5">
 
-                            <h2 id="incomeChangePercent" class="display-4 fw-bold text-muted">...</h2>
+                            <h2 class="display-4 fw-bold text-success">
+                                +18%
+                            </h2>
 
                             <p class="text-muted mb-0">
                                 Palyginus su praėjusiu mėnesiu
