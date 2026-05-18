@@ -67,6 +67,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Settings page buttons
+    const saveBtn = document.getElementById('saveSettingsBtn');
+    if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+
+    const resetBtn = document.getElementById('resetSettingsBtn');
+    if (resetBtn) resetBtn.addEventListener('click', resetSettings);
+
+    // Live tax preview on input change
+    ['gpmPercent', 'expenseDeductionPercent', 'vsdPercent', 'psdPercent'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateTaxPreview);
+    });
+
     // Country/Region Selection Handler
     const countrySelect = document.getElementById('countrySelect');
     if (countrySelect) {
@@ -331,37 +344,121 @@ function loadSettings() {
 
 function applySettingsToForms() {
     settings = loadSettings();
-    const expenseField = document.getElementById('expenseDeduction');
+    const gpmField = document.getElementById('gpmPercent');
+    const expenseField = document.getElementById('expenseDeductionPercent');
     const vsdField = document.getElementById('vsdPercent');
     const psdField = document.getElementById('psdPercent');
-    const gpmField = document.getElementById('gpmPercent');
-    const expenseSettingsField = document.getElementById('expenseDeductionPercent');
+    // Also update old field name used in invoice modal
+    const expenseDeductionField = document.getElementById('expenseDeduction');
 
+    if (gpmField) gpmField.value = settings.gpmPercent;
     if (expenseField) expenseField.value = settings.expenseDeductionPercent;
     if (vsdField) vsdField.value = settings.vsdPercent;
     if (psdField) psdField.value = settings.psdPercent;
-    if (gpmField) gpmField.value = settings.gpmPercent;
-    if (expenseSettingsField) expenseSettingsField.value = settings.expenseDeductionPercent;
+    if (expenseDeductionField) expenseDeductionField.value = settings.expenseDeductionPercent;
+
+    updateTaxPreview();
+    loadProfileSettings();
+}
+
+function updateTaxPreview() {
+    const gpm = parseFloat(document.getElementById('gpmPercent')?.value) || DEFAULT_SETTINGS.gpmPercent;
+    const expense = parseFloat(document.getElementById('expenseDeductionPercent')?.value) || DEFAULT_SETTINGS.expenseDeductionPercent;
+    const vsd = parseFloat(document.getElementById('vsdPercent')?.value) || DEFAULT_SETTINGS.vsdPercent;
+    const psd = parseFloat(document.getElementById('psdPercent')?.value) || DEFAULT_SETTINGS.psdPercent;
+
+    const amount = 1000;
+    const expenseDeduction = amount * (expense / 100);
+    const taxBase = amount - expenseDeduction;
+    const gpmAmt = taxBase * (gpm / 100);
+    const vsdPsdBase = taxBase * 0.9;
+    const vsdAmt = vsdPsdBase * (vsd / 100);
+    const psdAmt = vsdPsdBase * (psd / 100);
+    const netIncome = amount - gpmAmt - vsdAmt - psdAmt;
+
+    const previewGPM = document.getElementById('previewGPM');
+    const previewVSD = document.getElementById('previewVSD');
+    const previewPSD = document.getElementById('previewPSD');
+    const previewNet = document.getElementById('previewNet');
+
+    if (previewGPM) previewGPM.textContent = `€${gpmAmt.toFixed(2)}`;
+    if (previewVSD) previewVSD.textContent = `€${vsdAmt.toFixed(2)}`;
+    if (previewPSD) previewPSD.textContent = `€${psdAmt.toFixed(2)}`;
+    if (previewNet) previewNet.textContent = `€${netIncome.toFixed(2)}`;
+}
+
+function loadProfileSettings() {
+    try {
+        const profile = JSON.parse(localStorage.getItem('freelance_profile') || '{}');
+        const req = JSON.parse(localStorage.getItem('freelance_requisites') || '{}');
+
+        if (document.getElementById('profileFirstName')) document.getElementById('profileFirstName').value = profile.firstName || '';
+        if (document.getElementById('profileLastName')) document.getElementById('profileLastName').value = profile.lastName || '';
+        if (document.getElementById('profileEmail')) document.getElementById('profileEmail').value = profile.email || '';
+        if (document.getElementById('profileIVNumber')) document.getElementById('profileIVNumber').value = profile.ivNumber || '';
+
+        if (document.getElementById('reqIBAN')) document.getElementById('reqIBAN').value = req.iban || '';
+        if (document.getElementById('reqBank')) document.getElementById('reqBank').value = req.bank || '';
+        if (document.getElementById('reqCurrency')) document.getElementById('reqCurrency').value = req.currency || 'EUR';
+        if (document.getElementById('reqVAT')) document.getElementById('reqVAT').value = req.vat || '';
+    } catch(e) {}
 }
 
 function saveSettings() {
-    const gpmPercent = parseFloat(document.getElementById('gpmPercent')?.value) || DEFAULT_SETTINGS.gpmPercent;
-    const expenseDeductionPercent = parseFloat(document.getElementById('expenseDeductionPercent')?.value) || DEFAULT_SETTINGS.expenseDeductionPercent;
-    const vsdPercent = parseFloat(document.getElementById('vsdPercent')?.value) || DEFAULT_SETTINGS.vsdPercent;
-    const psdPercent = parseFloat(document.getElementById('psdPercent')?.value) || DEFAULT_SETTINGS.psdPercent;
+    const gpmPercent = parseFloat(document.getElementById('gpmPercent')?.value);
+    const expenseDeductionPercent = parseFloat(document.getElementById('expenseDeductionPercent')?.value);
+    const vsdPercent = parseFloat(document.getElementById('vsdPercent')?.value);
+    const psdPercent = parseFloat(document.getElementById('psdPercent')?.value);
 
-    const newSettings = {
-        gpmPercent,
-        expenseDeductionPercent,
-        vsdPercent,
-        psdPercent
-    };
+    // Validate
+    if ([gpmPercent, expenseDeductionPercent, vsdPercent, psdPercent].some(v => isNaN(v) || v < 0 || v > 100)) {
+        showToast('⚠️ Patikrinkite mokesčių procentus (0–100)', 'warning');
+        return;
+    }
 
+    const newSettings = { gpmPercent, expenseDeductionPercent, vsdPercent, psdPercent };
     saveSettingsToLocalStorage(newSettings);
     settings = newSettings;
+
+    // Save to API (DB)
+    fetch('/api/tax-settings/LT', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            gpm_percent: gpmPercent,
+            expense_deduction_percent: expenseDeductionPercent,
+            vsd_percent: vsdPercent,
+            psd_percent: psdPercent,
+            is_custom: 1
+        })
+    }).catch(err => console.warn('API settings save failed:', err));
+
+    // Save profile & requisites to localStorage
+    const profile = {
+        firstName: document.getElementById('profileFirstName')?.value || '',
+        lastName: document.getElementById('profileLastName')?.value || '',
+        email: document.getElementById('profileEmail')?.value || '',
+        ivNumber: document.getElementById('profileIVNumber')?.value || ''
+    };
+    const req = {
+        iban: document.getElementById('reqIBAN')?.value || '',
+        bank: document.getElementById('reqBank')?.value || '',
+        currency: document.getElementById('reqCurrency')?.value || 'EUR',
+        vat: document.getElementById('reqVAT')?.value || ''
+    };
+    localStorage.setItem('freelance_profile', JSON.stringify(profile));
+    localStorage.setItem('freelance_requisites', JSON.stringify(req));
+
+    updateTaxPreview();
+    showToast('✅ Nustatymai sėkmingai išsaugoti', 'success');
+}
+
+function resetSettings() {
+    if (!confirm('Ar tikrai norite grąžinti numatytuosius nustatymus?')) return;
+    saveSettingsToLocalStorage(DEFAULT_SETTINGS);
+    settings = { ...DEFAULT_SETTINGS };
     applySettingsToForms();
-    refreshDashboard();
-    showToast('⚙️ Nustatymai sėkmingai išsaugoti', 'success');
+    showToast('↩️ Grąžinti numatytieji nustatymai', 'success');
 }
 
 function updateNavActive() {
@@ -801,7 +898,7 @@ function calculateChartMax(values = []) {
 function updateChart(invoices) {
     const ctx = document.getElementById('incomeChart');
     const miniCtx = document.getElementById('miniChart');
-    const pieCanvas = document.getElementById('ratioPieChart');
+    const pieCanvas = document.getElementById('ratioPieChart') || document.getElementById('taxDonutChart');
     const style = getComputedStyle(document.documentElement);
     const textColor = style.getPropertyValue('--chart-text').trim() || '#000000';
     const gridColor = style.getPropertyValue('--chart-grid').trim() || 'rgba(0,0,0,0.1)';
@@ -1122,6 +1219,78 @@ function updateChart(invoices) {
                 }
             }
         });
+    }
+
+    // Yearly income curve chart (analytics page)
+    const yearlyIncomeCurveCtx = document.getElementById('yearlyIncomeCurve');
+    if (yearlyIncomeCurveCtx) {
+        // Monthly net income line chart
+        const monthlyKeys = Object.keys(monthlyData).sort();
+        const monthlyLabels = monthlyKeys.map(key => {
+            const [year, month] = key.split('-');
+            const monthNames = ['Sau', 'Vas', 'Kov', 'Bal', 'Geg', 'Bir', 'Lie', 'Rug', 'Rgs', 'Spa', 'Lap', 'Grd'];
+            return `${monthNames[parseInt(month, 10) - 1]} ${year}`;
+        });
+        const monthlyNeto = monthlyKeys.map(k => Number(monthlyData[k].neto.toFixed(2)));
+
+        if (window._yearlyIncomeCurveChart) window._yearlyIncomeCurveChart.destroy();
+
+        window._yearlyIncomeCurveChart = new Chart(yearlyIncomeCurveCtx, {
+            type: 'line',
+            data: {
+                labels: monthlyLabels.length ? monthlyLabels : ['Nėra duomenų'],
+                datasets: [{
+                    label: 'Likutis į rankas (€)',
+                    data: monthlyNeto.length ? monthlyNeto : [0],
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: textColor, font: { weight: '600' } } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { weight: '600' }, callback: v => `€ ${v}` }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: textColor, font: { weight: '600' }, usePointStyle: true } },
+                    tooltip: {
+                        backgroundColor: style.getPropertyValue('--surface').trim(),
+                        titleColor: textColor,
+                        bodyColor: style.getPropertyValue('--muted').trim()
+                    }
+                }
+            }
+        });
+    }
+
+    // Income change % indicator (analytics page)
+    const changeEl = document.getElementById('incomeChangePercent');
+    if (changeEl) {
+        const monthlyKeys = Object.keys(monthlyData).sort();
+        if (monthlyKeys.length >= 2) {
+            const prev = monthlyData[monthlyKeys[monthlyKeys.length - 2]].neto;
+            const curr = monthlyData[monthlyKeys[monthlyKeys.length - 1]].neto;
+            const pct = prev > 0 ? ((curr - prev) / prev * 100) : 0;
+            const sign = pct >= 0 ? '+' : '';
+            changeEl.textContent = `${sign}${pct.toFixed(1)}%`;
+            changeEl.className = pct >= 0 ? 'display-4 fw-bold text-success' : 'display-4 fw-bold text-danger';
+        } else if (monthlyKeys.length === 1) {
+            changeEl.textContent = 'N/A';
+            changeEl.className = 'display-4 fw-bold text-muted';
+        }
     }
 }
 
