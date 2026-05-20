@@ -3,3 +3,5 @@ pkill -f "python app.py" || true
 python app.py
 
 info@freelanceflow.com
+
+pip install -r requirements.txt

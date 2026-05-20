@@ -5,6 +5,9 @@
     --card-bg: #ffffff;
     --input-bg: #ffffff;
     --table-bg: #ffffff;
+    --menu-bg: #ffffff;
+    --input-group-bg: #e9ecef;
+    --input-group-color: #495057;
     --primary: #4f46e5;
     --primary-dark: #4338ca;
     --primary-soft: #eef2ff;
@@ -56,9 +59,17 @@
 
     --chart-text: #FAF9F6;
     --chart-grid: rgba(255, 255, 255, 0.1);
+    --menu-bg: #1a1a1a;
+    --input-group-bg: #2a2a2a;
+    --input-group-color: #e2e8f0;
 }
 
 /* Bootstrap dark mode compatibility */
+body.bg-light {
+    background: var(--bg) !important;
+    background-color: var(--bg-color) !important;
+}
+
 [data-theme="dark"] .bg-white,
 [data-theme="dark"] .card {
     background-color: var(--card-bg) !important;
@@ -71,6 +82,18 @@
     background: #242424;
     border-color: #333;
     color: #fff;
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: var(--input-group-bg) !important;
+    border-color: #333 !important;
+    color: var(--input-group-color) !important;
+}
+
+[data-theme="dark"] .form-select {
+    background-color: #242424 !important;
+    border-color: #333 !important;
+    color: #fff !important;
 }
 
 [data-theme="dark"] .table {
@@ -92,6 +115,7 @@ body {
     padding-top: 78px;
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color) !important;
+    background: var(--bg) !important;
     color: var(--text) !important;
     transition: background 0.3s ease;
     display: flex;
@@ -224,7 +248,7 @@ main {
 }
 
 .topbar-menu a {
-    color: var(--text-color);
+    color: #1e293b;
     text-decoration: none;
     font-weight: 600;
     font-size: 0.95rem;
@@ -235,18 +259,22 @@ main {
     color: var(--primary);
 }
 
+/* Dark tema — visi topbar linkai */
+[data-theme="dark"] .topbar-menu a {
+    color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .topbar-menu a:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
 [data-theme="dark"] .topbar-menu a.active,
 [data-theme="dark"] .topbar-menu .nav-link.active {
     color: #a389f4 !important;
     border-bottom: 2px solid #a389f4;
     text-shadow: 0 0 10px rgba(163, 137, 244, 0.4);
-}
-
-[data-theme="dark"] .topbar-menu a:hover,
-[data-theme="dark"] .topbar-menu .nav-link:hover {
-    color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
 }
 
 .top-menu {
@@ -793,37 +821,64 @@ footer {
     color: var(--warning);
 }
 
-.hamburger {
-    display: none;
-}
+/* ── Hamburger: slėpti desktop, rodyti mobile ── */
+/* (display controlled per-breakpoint below) */
 
+/* ── Bendri stiliai abiem mygtukams ── */
 .theme-toggle-btn,
 .hamburger {
     width: 42px;
     height: 42px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.03);
-    display: flex;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: #f0effe;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--text-color);
-    transition: 0.25s ease;
+    transition: background 0.25s ease, border-color 0.25s ease;
+    flex-shrink: 0;
+}
+
+/* Theme toggle: always visible on all screen sizes */
+.theme-toggle-btn {
+    display: flex;
+}
+
+/* Hamburger: hidden on desktop (≥769px), shown only on mobile */
+.hamburger {
+    display: none;
+}
+
+/* Ikona — light tema */
+.theme-toggle-btn i,
+.hamburger i {
+    font-size: 1rem;
+    color: #3730a3;
+    transition: color 0.25s ease;
 }
 
 .theme-toggle-btn:hover,
 .hamburger:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(79, 70, 229, 0.18);
+    border-color: var(--primary);
 }
 
-.theme-toggle-btn i {
-    color: #111;
-    transition: 0.3s ease;
+/* Dark tema — fonas ir ikona */
+[data-theme="dark"] .theme-toggle-btn,
+[data-theme="dark"] .hamburger {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-[data-theme="dark"] .theme-toggle-btn i {
+[data-theme="dark"] .theme-toggle-btn i,
+[data-theme="dark"] .hamburger i {
     color: #ffffff !important;
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover,
+[data-theme="dark"] .hamburger:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 @keyframes slideDownMenu {
@@ -965,7 +1020,6 @@ footer {
 [data-theme="dark"] th,
 [data-theme="dark"] span,
 [data-theme="dark"] p,
-[data-theme="dark"] a,
 [data-theme="dark"] h1,
 [data-theme="dark"] h2,
 [data-theme="dark"] h3,
@@ -973,6 +1027,31 @@ footer {
 [data-theme="dark"] h5,
 [data-theme="dark"] h6 {
     color: var(--text) !important;
+}
+
+[data-theme="dark"] a:not(.topbar-link):not(.social-icon):not(.btn) {
+    color: var(--text) !important;
+}
+
+.topbar-menu .topbar-link {
+    color: #1e293b !important;
+}
+
+[data-theme="dark"] .topbar-menu .topbar-link {
+    color: #e2e8f0 !important;
+}
+
+.topbar-menu .topbar-link:hover,
+.topbar-menu .topbar-link.active {
+    color: var(--primary) !important;
+}
+
+[data-theme="dark"] .topbar-menu .topbar-link:hover {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .topbar-menu .topbar-link.active {
+    color: #a389f4 !important;
 }
 
 @media (max-width: 992px) {
@@ -992,6 +1071,7 @@ footer {
 
     .chart-container {
         height: 280px;
+        min-height: 200px !important;
     }
 
     .toast-container {
@@ -1016,6 +1096,8 @@ footer {
 
     .btn-primary {
         padding: 0.75rem 1.5rem;
+        width: 100%;
+        justify-content: center;
     }
 
     .stat-card {
@@ -1026,67 +1108,121 @@ footer {
         min-height: 120px;
     }
 
+    /* --- MOBILUS TOPBAR KONTEINERIS --- */
     .topbar {
-        height: auto;
-        min-height: 64px;
-        padding: 0 1rem;
+        position: fixed !important; /* Išlaikom viršuje, bet leidžiam turiniui iškristi */
+        height: 64px !important;    /* Vienodas fiksuotas aukštis mobiliajame */
+        overflow: visible !important; /* KRITINIS: leidžia išskleidžiamam meniu matytis už topbar ribų */
+        z-index: 1000 !important;
+        padding: 0 !important;
     }
 
     .topbar-inner {
         padding-left: 1rem;
         padding-right: 1rem;
-        height: 64px;
+        height: 100% !important; /* Užpildo visus 64px */
     }
 
+    /* --- VERTIVALUS HAMBURGER MENIU --- */
     .topbar-menu {
-        display: none;
-        position: fixed;
-        top: 64px;
-        left: 0;
-        right: 0;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        padding: 0.5rem 0;
-        z-index: 999;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-        animation: slideDownMenu 0.22s ease;
+        display: none !important; 
+        
+        /* PAKEISTA: Naudojame position: fixed, kad meniu liktų vietoje, kai puslapis scrolinamas */
+        position: fixed !important; 
+        top: 64px !important; 
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+
+        background: var(--menu-bg) !important; 
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-bottom: 1px solid var(--border) !important;
+        
+        /* Griežtas išrikiuotas stulpelis */
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+        padding: 0.5rem 0 !important;
+        margin: 0 !important;
+        list-style: none !important;
+
+        z-index: 999999 !important;
+        box-shadow: var(--shadow-lg) !important;
+        
+        /* Išjungiam globalų perėjimą (transition), kuris sukelia „laikmačio sukimąsi“ */
+        transition: none !important; 
+        
+        /* Jei meniu labai ilgas, leidžiame prasukti patį sąrašą */
+        max-height: calc(100vh - 64px) !important;
+        overflow-y: auto !important;
     }
 
+    /* Kai JavaScript prideda .active klasę */
     .topbar-menu.active {
-        display: flex;
+        display: flex !important; 
+        height: auto !important; 
+        transition: none !important; /* Apsauga nuo globalaus * { transition: all } efekto */
     }
 
     .topbar-menu li {
-        width: 100%;
+        width: 100% !important;
+        display: block !important;
     }
 
+    /* --- MENIU NUORODOS --- */
+    .topbar-menu a,
     .topbar-menu a.topbar-link {
-        display: block;
-        padding: 0.9rem 1.5rem;
-        font-size: 1rem;
-        border-radius: 0;
-        border-left: 3px solid transparent;
-        transition: all 0.2s ease;
+        display: block !important;
+        width: 100% !important;
+        padding: 1rem 1.5rem !important;
+        font-size: 1rem !important;
+        text-align: left !important;
+        color: var(--text-color) !important; /* Naudoja jūsų kintamąjį tekstui */
+        background: transparent !important;
+        border-radius: 0 !important;
+        border-left: 4px solid transparent !important;
+        border-bottom: none !important; /* Panaikinam desktop gulsčią rėmelį */
+        text-shadow: none !important;
+        transition: var(--transition) !important;
+        box-sizing: border-box !important;
     }
 
+    /* Šviesios temos Hover / Active būsenos */
+    .topbar-menu a:hover,
+    .topbar-menu a.active,
     .topbar-menu a.topbar-link:hover,
     .topbar-menu a.topbar-link.active {
-        background: var(--primary-soft);
-        border-left-color: var(--primary);
-        padding-left: 1.75rem;
+        background: var(--primary-soft) !important;
+        border-left-color: var(--primary) !important;
+        color: var(--primary) !important;
+        padding-left: 1.75rem !important;
     }
 
+    /* --- TAMSIOS TEMOS INTEGRACIJA (Naudojant jūsų kintamuosius) --- */
+    [data-theme="dark"] .topbar-menu {
+        background: var(--menu-bg) !important; /* Paims #1a1a1a iš jūsų kodo */
+        border-bottom: 1px solid var(--border) !important;
+    }
+
+    [data-theme="dark"] .topbar-menu a,
+    [data-theme="dark"] .topbar-menu a.topbar-link {
+        color: var(--text) !important; /* Šviesus tekstas tamsiame fone */
+    }
+
+    /* Tamsios temos Hover / Active būsenos */
+    [data-theme="dark"] .topbar-menu a:hover,
+    [data-theme="dark"] .topbar-menu a.active,
     [data-theme="dark"] .topbar-menu a.topbar-link:hover,
     [data-theme="dark"] .topbar-menu a.topbar-link.active {
-        background: rgba(99,102,241,0.12);
-        border-left-color: #a389f4;
+        background: var(--primary-soft) !important; /* Paims rgba(99,102,241, 0.1) tūrį */
+        border-left-color: var(--primary) !important;
+        color: #ffffff !important;
     }
 
+    /* --- KITI MOBILŪS ELEMENTAI --- */
     .hamburger {
-        display: flex;
+        display: flex !important;
     }
 
     #statsContainer {
@@ -1126,47 +1262,25 @@ footer {
         font-size: 1.4rem !important;
     }
 
-    /* Dashboard cards equal height on mobile */
     .col-md-3 {
         flex: 0 0 50%;
         max-width: 50%;
     }
 
-    /* Table horizontal scroll */
     .table-responsive {
         -webkit-overflow-scrolling: touch;
         border-radius: 1rem;
     }
 
-    /* Modal full-width on mobile */
     .modal-dialog {
         margin: 0.75rem;
     }
 
-    /* Chart min height */
-    .chart-container {
-        min-height: 200px !important;
-    }
-
-    /* Settings cards */
     .col-lg-4, .col-lg-8 {
         flex: 0 0 100%;
         max-width: 100%;
     }
 
-    /* Analytics grid */
-    .col-lg-4 {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
-
-    /* Button full width on small screens */
-    .btn-primary {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /* Input group fix */
     .input-group .input-group-text {
         border-radius: 0 1rem 1rem 0 !important;
     }
@@ -1174,6 +1288,8 @@ footer {
         border-radius: 1rem 0 0 1rem !important;
     }
 }
+
+
 
 @media (max-width: 480px) {
     .col-md-3 {
@@ -1278,6 +1394,18 @@ footer {
     color: var(--bg-color) !important;
     background-color: var(--primary) !important;
     border-color: var(--primary) !important;
+}
+
+/* --- ANIMACIJA (Įklijuokite pačiame CSS failo gale, už @media ribų) --- */
+@keyframes slideDownMenu {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* SETTINGS PAGE SPACING FIX */
