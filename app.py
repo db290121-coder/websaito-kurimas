@@ -1,339 +1,342 @@
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
-import sqlite3
+from flask_migrate import Migrate
+from flask_login import (
+    LoginManager, login_user, logout_user,
+    login_required, current_user, UserMixin
+)
 import os
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template
+from flask import (
+    Flask, request, jsonify, render_template,
+    redirect, url_for, flash, session
+)
 import bcrypt
 
+from models import db, User, Invoice, TaxSettings, COUNTRY_TAX_CONFIG
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///invoices.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 CORS(app)
 csrf = CSRFProtect(app)
+db.init_app(app)
+migrate = Migrate(app, db)
 
-DATABASE = 'invoices.db'
+# ---------------------------------------------------------------------------
+# Flask-Login setup
+# ---------------------------------------------------------------------------
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Prašome prisijungti.'
+login_manager.login_message_category = 'warning'
 
-def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Make User work with Flask-Login (mixin pattern without changing models.py)
+User.get_id = lambda self: str(self.id)
+User.is_authenticated = property(lambda self: True)
+User.is_active = property(lambda self: True)
+User.is_anonymous = property(lambda self: False)
 
-def init_db():
-    with get_db() as conn:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS invoices (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                client_name TEXT NOT NULL,
-                amount REAL NOT NULL,
-                date TEXT NOT NULL,
-                tax_paid REAL NOT NULL,
-                expense_deduction_percent REAL DEFAULT 30.0,
-                vsd_percent REAL DEFAULT 9.0,
-                psd_percent REAL DEFAULT 6.98,
-                net_income REAL NOT NULL,
-                gpm REAL,
-                vsd REAL,
-                psd REAL,
-                status TEXT DEFAULT 'pending'
-            )
-        ''')
-        # Create tax_settings table for country-specific tax configurations
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS tax_settings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                country TEXT NOT NULL UNIQUE,
-                gpm_percent REAL DEFAULT 15.0,
-                expense_deduction_percent REAL DEFAULT 30.0,
-                vsd_percent REAL DEFAULT 9.0,
-                psd_percent REAL DEFAULT 6.98,
-                is_custom INTEGER DEFAULT 0,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        # Add columns if they don't exist (for migration)
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN expense_deduction_percent REAL DEFAULT 30.0')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN vsd_percent REAL DEFAULT 9.0')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN psd_percent REAL DEFAULT 6.98')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN net_income REAL')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN gpm REAL')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN vsd REAL')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN psd REAL')
-        except sqlite3.OperationalError:
-            pass
-        try:
-            conn.execute('ALTER TABLE invoices ADD COLUMN status TEXT DEFAULT "pending"')
-        except sqlite3.OperationalError:
-            pass
-        
-        # Initialize default tax settings for Lithuania
-        try:
-            conn.execute('''
-                INSERT INTO tax_settings (country, gpm_percent, expense_deduction_percent, vsd_percent, psd_percent, is_custom)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', ('LT', 15.0, 30.0, 9.0, 6.98, 0))
-            conn.commit()
-        except sqlite3.IntegrityError:
-            # Already exists
-            pass
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
+
+# ---------------------------------------------------------------------------
+# Finansų skaičiavimas
+# ---------------------------------------------------------------------------
 def calculate_finances(amount, expense_deduction_percent=30.0, vsd_percent=9.0, psd_percent=6.98):
-    # Expense deduction (30% of gross amount)
     expense_deduction = amount * (expense_deduction_percent / 100)
     tax_base = amount - expense_deduction
-    
-    # GPM 15% on full tax base (after expense deduction)
     gpm = tax_base * 0.15
-    
-    # VSD and PSD calculated on 90% of tax base
     vsd_psd_base = tax_base * 0.9
     vsd = vsd_psd_base * (vsd_percent / 100)
     psd = vsd_psd_base * (psd_percent / 100)
-    
-    # Total tax
     total_tax = gpm + vsd + psd
-    
-    # Net income = gross amount - total taxes
-    net_income = amount - total_tax
-    
     return {
-        'tax_paid': total_tax,  # Changed to total tax instead of just GPM
-        'net_income': net_income,
+        'tax_paid': total_tax,
+        'net_income': amount - total_tax,
         'expense_deduction': expense_deduction,
         'gpm': gpm,
         'vsd': vsd,
-        'psd': psd
+        'psd': psd,
     }
+
+
+def seed_defaults():
+    if not TaxSettings.query.filter_by(country='LT').first():
+        db.session.add(TaxSettings(
+            country='LT', gpm_percent=15.0, expense_deduction_percent=30.0,
+            vsd_percent=9.0, psd_percent=6.98, is_custom=0,
+        ))
+        db.session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Auth maršrutai
+# ---------------------------------------------------------------------------
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username   = request.form.get('username', '').strip()
+        email      = request.form.get('email', '').strip().lower()
+        password   = request.form.get('password', '')
+        password2  = request.form.get('password2', '')
+        activity   = request.form.get('activity_type', 'freelancer')
+        country    = request.form.get('country_code', 'LT')
+
+        # Validacija
+        errors = []
+        if not username or len(username) < 3:
+            errors.append('Vartotojo vardas per trumpas (mažiausiai 3 simboliai).')
+        if not email or '@' not in email:
+            errors.append('Neteisingas el. pašto adresas.')
+        if len(password) < 8:
+            errors.append('Slaptažodis turi būti bent 8 simbolių.')
+        if password != password2:
+            errors.append('Slaptažodžiai nesutampa.')
+        if User.query.filter_by(username=username).first():
+            errors.append('Toks vartotojo vardas jau užimtas.')
+        if User.query.filter_by(email=email).first():
+            errors.append('Šis el. paštas jau registruotas.')
+        if country not in COUNTRY_TAX_CONFIG:
+            country = 'LT'
+
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template(
+                'register.html',
+                countries=COUNTRY_TAX_CONFIG,
+                form_data={'username': username, 'email': email,
+                           'activity_type': activity, 'country_code': country},
+            )
+
+        pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user = User(
+            username=username,
+            email=email,
+            password_hash=pw_hash,
+            activity_type=activity,
+            country_code=country,
+            account_type='free',
+        )
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)
+        flash(f'Sveiki, {username}! Paskyra sukurta sėkmingai.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('register.html', countries=COUNTRY_TAX_CONFIG, form_data={})
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        identifier = request.form.get('identifier', '').strip()
+        password   = request.form.get('password', '')
+        remember   = bool(request.form.get('remember'))
+
+        # Ieškome pagal username ARBA email
+        user = (User.query.filter_by(username=identifier).first() or
+                User.query.filter_by(email=identifier.lower()).first())
+
+        if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
+            login_user(user, remember=remember)
+            next_page = request.args.get('next') or url_for('index')
+            flash(f'Sveiki sugrįžę, {user.username}!', 'success')
+            return redirect(next_page)
+
+        flash('Neteisingas vartotojo vardas / el. paštas arba slaptažodis.', 'danger')
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Atsijungėte sėkmingai.', 'info')
+    return redirect(url_for('login'))
+
+
+# ---------------------------------------------------------------------------
+# Pagrindai puslapiai
+# ---------------------------------------------------------------------------
 
 @app.route('/')
 @app.route('/index.html')
 def index():
-    with get_db() as conn:
-        invoices = conn.execute('SELECT * FROM invoices').fetchall()
-
-    total_amount = 0
-    total_taxes = 0
-    total_net_income = 0
-    invoice_count = len(invoices)
-
-    for row in invoices:
-        invoice = dict(row)
-
-        amount = float(invoice.get('amount', 0) or 0)
-
-        # jei senos sąskaitos neturi tax/net reikšmių
-        if invoice.get('tax_paid') is None or invoice.get('net_income') is None:
-            finances = calculate_finances(
-                amount,
-                invoice.get('expense_deduction_percent', 30.0),
-                invoice.get('vsd_percent', 9.0),
-                invoice.get('psd_percent', 6.98)
-            )
-
-            tax_paid = finances['tax_paid']
-            net_income = finances['net_income']
-
+    invoices = Invoice.query.all()
+    total_amount = total_taxes = total_net_income = 0
+    for inv in invoices:
+        amount = inv.amount or 0
+        if inv.tax_paid is None or inv.net_income is None:
+            f = calculate_finances(amount, inv.expense_deduction_percent or 30.0,
+                                   inv.vsd_percent or 9.0, inv.psd_percent or 6.98)
+            total_taxes += f['tax_paid']
+            total_net_income += f['net_income']
         else:
-            tax_paid = float(invoice.get('tax_paid', 0) or 0)
-            net_income = float(invoice.get('net_income', 0) or 0)
-
+            total_taxes += inv.tax_paid or 0
+            total_net_income += inv.net_income or 0
         total_amount += amount
-        total_taxes += tax_paid
-        total_net_income += net_income
 
-    return render_template(
-        'index.html',
+    return render_template('index.html',
         total_amount=round(total_amount, 2),
         total_taxes=round(total_taxes, 2),
         total_net_income=round(total_net_income, 2),
-        invoice_count=invoice_count
+        invoice_count=len(invoices),
     )
+
 
 @app.route('/archive.html')
 def archive():
-    with get_db() as conn:
-        invoices = conn.execute('SELECT * FROM invoices').fetchall()
-    return render_template('archive.html', invoices=invoices)
+    return render_template('archive.html', invoices=Invoice.query.all())
+
 
 @app.route('/analytics.html')
 def analytics():
-    with get_db() as conn:
-        invoices = conn.execute('SELECT * FROM invoices').fetchall()
-    
-    # Prepare data for charts
+    invoices = Invoice.query.all()
     monthly_data = {}
-    for row in invoices:
-        invoice = dict(row)
-        date = invoice['date']
-        amount = float(invoice.get('amount', 0) or 0)
-        tax_paid = float(invoice.get('tax_paid', 0) or 0)
-        net_income = float(invoice.get('net_income', 0) or 0)
-
-        month = datetime.strptime(date, '%Y-%m-%d').strftime('%Y-%m')
+    for inv in invoices:
+        month = datetime.strptime(inv.date, '%Y-%m-%d').strftime('%Y-%m')
         if month not in monthly_data:
             monthly_data[month] = {'amount': 0, 'tax_paid': 0, 'net_income': 0}
-        
-        monthly_data[month]['amount'] += amount
-        monthly_data[month]['tax_paid'] += tax_paid
-        monthly_data[month]['net_income'] += net_income
-
-    # Convert to sorted lists for charting
+        monthly_data[month]['amount'] += inv.amount or 0
+        monthly_data[month]['tax_paid'] += inv.tax_paid or 0
+        monthly_data[month]['net_income'] += inv.net_income or 0
     sorted_months = sorted(monthly_data.keys())
-    amounts = [round(monthly_data[m]['amount'], 2) for m in sorted_months]
-    taxes = [round(monthly_data[m]['tax_paid'], 2) for m in sorted_months]
-    net_incomes = [round(monthly_data[m]['net_income'], 2) for m in sorted_months]
-
-    return render_template(
-        'analytics.html',
+    return render_template('analytics.html',
         months=sorted_months,
-        amounts=amounts,
-        taxes=taxes,
-        net_incomes=net_incomes
+        amounts=[round(monthly_data[m]['amount'], 2) for m in sorted_months],
+        taxes=[round(monthly_data[m]['tax_paid'], 2) for m in sorted_months],
+        net_incomes=[round(monthly_data[m]['net_income'], 2) for m in sorted_months],
     )
+
 
 @app.route('/settings.html')
 def settings():
-    with get_db() as conn:
-        settings = conn.execute('SELECT * FROM tax_settings').fetchall()
-    return render_template('settings.html', settings=settings)
+    return render_template('settings.html', settings=TaxSettings.query.all())
+
+
+# ---------------------------------------------------------------------------
+# API: Sąskaitos
+# ---------------------------------------------------------------------------
 
 @app.route('/api/invoices', methods=['GET', 'POST'])
 @csrf.exempt
-def invoices():
+def invoices_api():
     if request.method == 'POST':
         data = request.get_json()
-        client_name = data['client_name']
         amount = float(data['amount'])
-        date = data['date']
-        expense_deduction_percent = float(data.get('expense_deduction_percent', 30.0))
-        vsd_percent = float(data.get('vsd_percent', 9.0))
-        psd_percent = float(data.get('psd_percent', 6.98))
-        status = data.get('status', 'pending')  # 'pending' or 'paid'
-        
-        finances = calculate_finances(amount, expense_deduction_percent, vsd_percent, psd_percent)
-        tax_paid = finances['tax_paid']
-        net_income = finances['net_income']
-        gpm = finances['gpm']
-        vsd = finances['vsd']
-        psd = finances['psd']
-        
-        with get_db() as conn:
-            conn.execute('''INSERT INTO invoices 
-                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd, status) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                         (client_name, amount, date, tax_paid, expense_deduction_percent, vsd_percent, psd_percent, net_income, gpm, vsd, psd, status))
-            conn.commit()
-        
+        edp = float(data.get('expense_deduction_percent', 30.0))
+        vp  = float(data.get('vsd_percent', 9.0))
+        pp  = float(data.get('psd_percent', 6.98))
+        f   = calculate_finances(amount, edp, vp, pp)
+        inv = Invoice(
+            client_name=data['client_name'], amount=amount, date=data['date'],
+            tax_paid=f['tax_paid'], expense_deduction_percent=edp,
+            vsd_percent=vp, psd_percent=pp, net_income=f['net_income'],
+            gpm=f['gpm'], vsd=f['vsd'], psd=f['psd'],
+            status=data.get('status', 'pending'),
+            user_id=current_user.id if current_user.is_authenticated else None,
+        )
+        db.session.add(inv)
+        db.session.commit()
         return jsonify({'message': 'Invoice added successfully'}), 201
-    
-    elif request.method == 'GET':
-        with get_db() as conn:
-            invoices = conn.execute('SELECT * FROM invoices').fetchall()
-        
-        result = []
-        for row in invoices:
-            invoice = dict(row)
-            if invoice.get('net_income') is None or invoice.get('gpm') is None:
-                # Recalculate for old invoices
-                finances = calculate_finances(
-                    invoice['amount'], 
-                    invoice.get('expense_deduction_percent', 30.0),
-                    invoice.get('vsd_percent', 9.0),
-                    invoice.get('psd_percent', 6.98)
-                )
-                invoice['net_income'] = finances['net_income']
-                invoice['tax_paid'] = finances['tax_paid']
-                invoice['gpm'] = finances['gpm']
-                invoice['vsd'] = finances['vsd']
-                invoice['psd'] = finances['psd']
-                # Optionally update DB, but for now just return
-            result.append(invoice)
-        return jsonify(result)
+
+    result = []
+    for inv in Invoice.query.all():
+        d = inv.to_dict()
+        if inv.net_income is None or inv.gpm is None:
+            f = calculate_finances(inv.amount, inv.expense_deduction_percent or 30.0,
+                                   inv.vsd_percent or 9.0, inv.psd_percent or 6.98)
+            d.update({'net_income': f['net_income'], 'tax_paid': f['tax_paid'],
+                      'gpm': f['gpm'], 'vsd': f['vsd'], 'psd': f['psd']})
+        result.append(d)
+    return jsonify(result)
+
 
 @app.route('/api/invoices/<int:invoice_id>', methods=['DELETE'])
 @csrf.exempt
 def delete_invoice(invoice_id):
-    with get_db() as conn:
-        cursor = conn.execute('DELETE FROM invoices WHERE id = ?', (invoice_id,))
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'Invoice not found'}), 404
-        conn.commit()
+    inv = Invoice.query.get(invoice_id)
+    if not inv:
+        return jsonify({'error': 'Invoice not found'}), 404
+    db.session.delete(inv)
+    db.session.commit()
     return jsonify({'message': 'Invoice deleted successfully'})
 
+
 @app.route('/api/invoices/<int:invoice_id>/status', methods=['PATCH'])
-@csrf.exempt  # Exempt from CSRF for API calls
+@csrf.exempt
 def update_invoice_status(invoice_id):
-    """Update the status of an invoice (pending/paid)"""
-    data = request.get_json()
+    data   = request.get_json()
     status = data.get('status', 'pending')
-    
     if status not in ['pending', 'paid']:
-        return jsonify({'error': 'Invalid status. Must be "pending" or "paid"'}), 400
-    
-    with get_db() as conn:
-        cursor = conn.execute('UPDATE invoices SET status = ? WHERE id = ?', (status, invoice_id))
-        if cursor.rowcount == 0:
-            return jsonify({'error': 'Invoice not found'}), 404
-        conn.commit()
-    
-    return jsonify({'message': 'Invoice status updated successfully', 'status': status}), 200
+        return jsonify({'error': 'Invalid status'}), 400
+    inv = Invoice.query.get(invoice_id)
+    if not inv:
+        return jsonify({'error': 'Invoice not found'}), 404
+    inv.status = status
+    db.session.commit()
+    return jsonify({'message': 'Status updated', 'status': status}), 200
+
+
+# ---------------------------------------------------------------------------
+# API: Mokesčių nustatymai
+# ---------------------------------------------------------------------------
 
 @app.route('/api/tax-settings', methods=['GET'])
 def get_tax_settings():
-    """Get all available tax settings by country"""
-    with get_db() as conn:
-        settings = conn.execute('SELECT * FROM tax_settings').fetchall()
-    return jsonify([dict(s) for s in settings])
+    return jsonify([s.to_dict() for s in TaxSettings.query.all()])
+
+
+@app.route('/api/tax-settings/countries', methods=['GET'])
+def get_country_configs():
+    """Grąžina visą COUNTRY_TAX_CONFIG žodyną (JS naudoja auto-fill)."""
+    return jsonify(COUNTRY_TAX_CONFIG)
+
 
 @app.route('/api/tax-settings/<country>', methods=['GET', 'POST'])
-@csrf.exempt  # Exempt from CSRF for API calls - should implement token-based auth in production
-def tax_settings(country):
-    """Get or update tax settings for a specific country"""
+@csrf.exempt
+def tax_settings_api(country):
     if request.method == 'GET':
-        with get_db() as conn:
-            setting = conn.execute('SELECT * FROM tax_settings WHERE country = ?', (country,)).fetchone()
-        if setting:
-            return jsonify(dict(setting))
+        # Pirma žiūrim į DB, paskui į statinį konfigą
+        s = TaxSettings.query.filter_by(country=country).first()
+        if s:
+            return jsonify(s.to_dict())
+        cfg = COUNTRY_TAX_CONFIG.get(country)
+        if cfg:
+            return jsonify({**cfg, 'country': country})
         return jsonify({'error': 'Country not found'}), 404
-    
-    elif request.method == 'POST':
-        data = request.get_json()
-        with get_db() as conn:
-            conn.execute('''
-                INSERT OR REPLACE INTO tax_settings 
-                (country, gpm_percent, expense_deduction_percent, vsd_percent, psd_percent, is_custom, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                country,
-                float(data.get('gpm_percent', 15.0)),
-                float(data.get('expense_deduction_percent', 30.0)),
-                float(data.get('vsd_percent', 9.0)),
-                float(data.get('psd_percent', 6.98)),
-                int(data.get('is_custom', 0)),
-                datetime.now().isoformat()
-            ))
-            conn.commit()
-        return jsonify({'message': 'Tax settings updated successfully'}), 200
+
+    data = request.get_json()
+    s = TaxSettings.query.filter_by(country=country).first()
+    if not s:
+        s = TaxSettings(country=country)
+        db.session.add(s)
+    s.gpm_percent = float(data.get('gpm_percent', 15.0))
+    s.expense_deduction_percent = float(data.get('expense_deduction_percent', 30.0))
+    s.vsd_percent = float(data.get('vsd_percent', 9.0))
+    s.psd_percent = float(data.get('psd_percent', 6.98))
+    s.is_custom   = int(data.get('is_custom', 0))
+    s.updated_at  = datetime.now().isoformat()
+    db.session.commit()
+    return jsonify({'message': 'Tax settings updated'}), 200
+
 
 if __name__ == '__main__':
-    init_db()
+    with app.app_context():
+        db.create_all()
+        seed_defaults()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)

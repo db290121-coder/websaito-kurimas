@@ -18,7 +18,7 @@ let settings = loadSettings();
 document.addEventListener('DOMContentLoaded', function() {
     const tooltipTriggers = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     const hamburger = document.getElementById('hamburger');
-    const menu = document.querySelector('.topbar-menu');
+    const menu = document.getElementById('mobile-menu');
 
     if (hamburger && menu) {
         hamburger.addEventListener('click', (e) => {

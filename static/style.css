@@ -998,12 +998,12 @@ footer {
 [data-theme="dark"] label,
 [data-theme="dark"] .form-label,
 [data-theme="dark"] .settings-label,
-[data-theme="dark"] .dropdown-label 
+[data-theme="dark"] .dropdown-label,  /* <- Kablelis pridėtas! */
 [data-theme="dark"] .form-text,
 [data-theme="dark"] .text-muted,
 [data-theme="dark"] .hint-text,
 [data-theme="dark"] small {
-    color: #94a3b8 !important;
+    color: #94a3b8 !important; /* Šviesiai pilka spalva tamsiai temai */
 }
 
 /* Placeholders */
@@ -1499,4 +1499,246 @@ footer {
     align-items: center;
     gap: 0.5rem;
     flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   style_additions.css
+   Įklijuokite į style.css pabaigą (arba <style> bloko pabaigą).
+   Apima: Auth kortelė, Navbar auth mygtukai, Info tooltip ikonos,
+          Slaptažodžio stiprumo juosta, Dark mode suderinamumas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ── Auth puslapio kortelė ──────────────────────────────────────────────── */
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 1.25rem;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 4px 32px rgba(0,0,0,.08);
+    margin: 0 auto;
+}
+
+.auth-card--wide {
+    max-width: 560px;
+}
+
+.auth-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-soft, #eff6ff);
+    color: var(--bs-primary, #0d6efd);
+    font-size: 1.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dark mode auth card */
+[data-theme="dark"] .auth-card {
+    background: var(--surface, #1e2330);
+    border-color: var(--border-color, #2d3748);
+    box-shadow: 0 4px 32px rgba(0,0,0,.4);
+}
+
+[data-theme="dark"] .auth-icon {
+    background: rgba(99,179,237,.12);
+    color: #63b3ed;
+}
+
+
+/* ── Info tooltip ikona ─────────────────────────────────────────────────── */
+
+.info-tip {
+    cursor: help;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    font-size: .85em;
+    opacity: .65;
+    transition: opacity .15s;
+}
+
+.info-tip:hover {
+    opacity: 1;
+}
+
+/* Bootstrap tooltip dark mode fix */
+[data-theme="dark"] .tooltip-inner {
+    background-color: #2d3748;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: #2d3748;
+}
+[data-theme="dark"] .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: #2d3748;
+}
+
+
+/* ── Navbar auth sekcija (desktop) ──────────────────────────────────────── */
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Dropdown vartotojo meniu dark mode */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--surface, #1e2330);
+    border-color: var(--border-color, #2d3748);
+    color: var(--text, #e2e8f0);
+}
+[data-theme="dark"] .dropdown-item {
+    color: var(--text, #e2e8f0);
+}
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: rgba(255,255,255,.06);
+}
+[data-theme="dark"] .dropdown-divider {
+    border-color: var(--border-color, #2d3748);
+}
+
+
+/* ── Mobile meniu auth sekcija ──────────────────────────────────────────── */
+
+.topbar-menu-divider {
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    margin: .5rem 0;
+    pointer-events: none;
+    padding: 0 !important;
+}
+
+.topbar-menu-auth {
+    padding: .4rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.topbar-link--danger {
+    color: var(--bs-danger, #dc3545) !important;
+}
+.topbar-link--danger:hover {
+    color: #a61c2e !important;
+}
+
+/* Mobile: auth nuorodos mažesnis šriftas */
+@media (max-width: 991.98px) {
+    .topbar-menu .small,
+    .topbar-menu li .topbar-link.small {
+        font-size: .82rem;
+        opacity: .8;
+    }
+}
+
+
+/* ── Slaptažodžio stiprumo juosta ───────────────────────────────────────── */
+
+.progress {
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width .3s ease, background-color .3s ease;
+}
+
+
+/* ── Registracijos veiklos tipo mygtukai ────────────────────────────────── */
+
+.activity-option .btn-check:checked + .btn-outline-primary {
+    background: var(--bs-primary);
+    color: #fff;
+    border-color: var(--bs-primary);
+}
+
+.activity-option .btn-check:checked + .btn-outline-secondary {
+    background: var(--bs-secondary);
+    color: #fff;
+    border-color: var(--bs-secondary);
+}
+
+
+/* ── Mokesčių peržiūros blokas (registracija) ───────────────────────────── */
+
+#taxPreviewBox {
+    animation: fadeInDown .2s ease;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+[data-theme="dark"] #taxPreviewBox {
+    background: rgba(99,179,237,.07) !important;
+    border-color: rgba(99,179,237,.2) !important;
+}
+
+
+/* ── Flash / Alert dark mode ────────────────────────────────────────────── */
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(220,53,69,.15);
+    color: #f5a0a8;
+    border-color: rgba(220,53,69,.3);
+}
+[data-theme="dark"] .alert-success {
+    background-color: rgba(25,135,84,.15);
+    color: #75d7a7;
+    border-color: rgba(25,135,84,.3);
+}
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(255,193,7,.12);
+    color: #ffd85c;
+    border-color: rgba(255,193,7,.3);
+}
+[data-theme="dark"] .alert-info {
+    background-color: rgba(13,202,240,.12);
+    color: #7deaf7;
+    border-color: rgba(13,202,240,.3);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVBAR DUAL-MENU FIX
+   Desktop meniu visada matomas dideliuose ekranuose.
+   Mobilaus meniu pradžioje paslėptas; JS prideda .active klasę.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Desktop meniu – rodomas tik >= lg */
+.topbar-menu--desktop {
+    display: flex !important;
+}
+@media (max-width: 991.98px) {
+    .topbar-menu--desktop {
+        display: none !important;
+    }
+}
+
+/* Mobilaus meniu – pradžioje paslėptas visada */
+.topbar-menu--mobile {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    padding: .5rem 0 1rem;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    background: var(--surface, #fff);
+}
+
+/* Kai hamburger aktyvuoja .active – rodome */
+.topbar-menu--mobile.active {
+    display: flex !important;
+}
+
+[data-theme="dark"] .topbar-menu--mobile {
+    background: var(--surface, #1a1f2e);
+    border-top-color: var(--border-color, #2d3748);
 }
