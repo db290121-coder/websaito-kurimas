@@ -31,7 +31,7 @@
                 <li><a href="/"              class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
                 <li><a href="/archive.html"  class="topbar-link {% if '/archive' in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
                 <li><a href="/analytics.html"class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
-                <li><a href="/settings.html" class="topbar-link {% if '/settings' in request.path %}active{% endif %}">Nustatymai</a></li>
+                {% if not current_user.is_authenticated %}<li><a href="/settings.html" class="topbar-link {% if '/settings' in request.path %}active{% endif %}">Nustatymai</a></li>{% endif %}
             </ul>
     
             <!-- Dešinė pusė: tema + auth (desktop) -->
@@ -96,7 +96,7 @@
             <li><a href="/"               class="topbar-link">Apžvalga</a></li>
             <li><a href="/archive.html"   class="topbar-link">Sąskaitų archyvas</a></li>
             <li><a href="/analytics.html" class="topbar-link">Gilioji analizė</a></li>
-            <li><a href="/settings.html"  class="topbar-link">Nustatymai</a></li>
+            {% if not current_user.is_authenticated %}<li><a href="/settings.html"  class="topbar-link">Nustatymai</a></li>{% endif %}
     
             {# Auth sekcija mobile meniu apačioje #}
             <li class="topbar-menu-divider"></li>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nustatymai</title>
+    <title>Nustatymai – FreelanceFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,10 +14,10 @@
 <body class="bg-light">
     <div id="toastContainer" class="toast-container"></div>
 
+    <!-- ── Topbar ─────────────────────────────────────────────── -->
     <nav class="topbar">
         <div class="topbar-inner">
-    
-            <!-- Brand -->
+
             <a href="/" class="brand-group text-decoration-none">
                 <div class="brand-icon"><i class="fa-solid fa-rocket"></i></div>
                 <div>
@@ -25,298 +25,462 @@
                     <div class="brand-tagline">Invoice &amp; finance hub</div>
                 </div>
             </a>
-    
-            <!-- Desktop meniu -->
+
             <ul class="topbar-menu topbar-menu--desktop">
-                <li><a href="/"              class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
-                <li><a href="/archive.html"  class="topbar-link {% if '/archive' in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
-                <li><a href="/analytics.html"class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
-                <li><a href="/settings.html" class="topbar-link {% if '/settings' in request.path %}active{% endif %}">Nustatymai</a></li>
+                <li><a href="/"               class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
+                <li><a href="/archive.html"   class="topbar-link {% if '/archive'   in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
+                <li><a href="/analytics.html" class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
+                {% if not current_user.is_authenticated %}
+                <li><a href="/settings.html"  class="topbar-link {% if '/settings'  in request.path %}active{% endif %}">Nustatymai</a></li>
+                {% endif %}
             </ul>
-    
-            <!-- Dešinė pusė: tema + auth (desktop) -->
+
             <div class="topbar-actions">
                 <button id="theme-toggle" class="theme-toggle-btn" title="Keisti temą">
                     <i class="fa-solid fa-moon"></i>
                 </button>
-    
+
                 {% if current_user.is_authenticated %}
-                    {# Prisijungęs vartotojas – rodome vardą ir išeiti #}
                     <div class="dropdown d-none d-lg-flex align-items-center">
                         <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
-                            <i class="fa-solid fa-user me-1"></i>
-                            {{ current_user.username }}
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-user me-1"></i>{{ current_user.username }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <span class="dropdown-item-text small text-muted">
-                                    {{ current_user.email }}
-                                </span>
-                            </li>
+                            <li><span class="dropdown-item-text small text-muted">{{ current_user.email }}</span></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item small" href="/settings.html">
-                                    <i class="fa-solid fa-gear me-2"></i>Nustatymai
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item small text-danger" href="{{ url_for('logout') }}">
-                                    <i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item small" href="/settings.html"><i class="fa-solid fa-gear me-2"></i>Nustatymai</a></li>
+                            <li><a class="dropdown-item small text-danger" href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti</a></li>
                         </ul>
                     </div>
                 {% else %}
-                    {# Neprisijungęs – Prisijungti / Registruotis (desktop) #}
                     <div class="d-none d-lg-flex align-items-center gap-2">
-                        <a href="{{ url_for('login') }}"
-                        class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
-                        </a>
-                        <a href="{{ url_for('register') }}"
-                        class="btn btn-sm btn-primary rounded-pill px-3">
-                            <i class="fa-solid fa-user-plus me-1"></i>Registruotis
-                        </a>
+                        <a href="{{ url_for('login') }}"    class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary rounded-pill px-3"><i class="fa-solid fa-user-plus me-1"></i>Registruotis</a>
                     </div>
                 {% endif %}
-    
-                <!-- Hamburger (mobile) -->
+
                 <button id="hamburger" class="hamburger" aria-label="Meniu" aria-expanded="false">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
-    
         </div>
-    
-        {# ── Mobile išskleidžiamas meniu ──────────────────────────────────────── #}
+
         <ul class="topbar-menu topbar-menu--mobile" id="mobile-menu">
             <li><a href="/"               class="topbar-link">Apžvalga</a></li>
             <li><a href="/archive.html"   class="topbar-link">Sąskaitų archyvas</a></li>
             <li><a href="/analytics.html" class="topbar-link">Gilioji analizė</a></li>
+            {% if not current_user.is_authenticated %}
             <li><a href="/settings.html"  class="topbar-link">Nustatymai</a></li>
-    
-            {# Auth sekcija mobile meniu apačioje #}
+            {% endif %}
             <li class="topbar-menu-divider"></li>
-    
             {% if current_user.is_authenticated %}
                 <li class="topbar-menu-auth">
                     <i class="fa-solid fa-user text-muted me-1"></i>
                     <span class="small text-muted">{{ current_user.username }}</span>
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti
-                    </a>
-                </li>
+                <li><a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small"><i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti</a></li>
             {% else %}
-                <li>
-                    <a href="{{ url_for('login') }}" class="topbar-link small">
-                        <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('register') }}" class="topbar-link small">
-                        <i class="fa-solid fa-user-plus me-1"></i>Registruotis
-                    </a>
-                </li>
+                <li><a href="{{ url_for('login') }}"    class="topbar-link small"><i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti</a></li>
+                <li><a href="{{ url_for('register') }}" class="topbar-link small"><i class="fa-solid fa-user-plus me-1"></i>Registruotis</a></li>
             {% endif %}
         </ul>
     </nav>
 
+    <!-- ── Main ───────────────────────────────────────────────── -->
     <main class="container py-5">
 
-        <!-- PAGE HEADER -->
-        <div class="mb-5">
+        <div class="mb-4">
             <h1 class="display-6 fw-bold mb-1">Nustatymai</h1>
-            <p class="text-muted mb-0">Konfigūruokite savo profilį, mokesčius ir sąskaitų rekvizitus.</p>
+            <p class="text-muted mb-0">Konfigūruokite rekvizitus, mokesčius ir saugumą.</p>
         </div>
 
-        <div class="row g-4">
-            <div class="col-lg-8">
+        <div class="settings-layout">
 
-                <!-- PROFILE CARD -->
-                <section class="card dashboard-card shadow-sm border-0 mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-4">
-                            <i class="fa-solid fa-user me-2 text-primary opacity-75"></i>Mano profilis
-                        </h5>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Vardas</label>
-                                <input type="text" id="profileFirstName" class="form-control rounded-3" placeholder="Jonas">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Pavardė</label>
-                                <input type="text" id="profileLastName" class="form-control rounded-3" placeholder="Jonaitis">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">El. paštas</label>
-                                <input type="email" id="profileEmail" class="form-control rounded-3" placeholder="jonas@pavyzdys.lt">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Individualios veiklos numeris</label>
-                                <input type="text" id="profileIVNumber" class="form-control rounded-3" placeholder="300XXXXXXX">
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAX SETTINGS CARD -->
-                <section class="card dashboard-card shadow-sm border-0 mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-1">
-                            <i class="fa-solid fa-percent me-2 text-warning opacity-75"></i>Mokesčių nustatymai
-                        </h5>
-                        <p class="text-muted small mb-4">Šie procentai naudojami skaičiuojant kiekvienos sąskaitos mokesčius.</p>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">GPM (%)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.01" min="0" max="100" id="gpmPercent" class="form-control rounded-3" value="15">
-                                    <span class="input-group-text rounded-3">%</span>
-                                </div>
-                                <div class="form-text">Gyventojų pajamų mokestis</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Išlaidų atskaitymas (%)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.01" min="0" max="100" id="expenseDeductionPercent" class="form-control rounded-3" value="30">
-                                    <span class="input-group-text rounded-3">%</span>
-                                </div>
-                                <div class="form-text">Fiksuotas išlaidų atskaitymas nuo pajamų</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">VSD (%)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.01" min="0" max="100" id="vsdPercent" class="form-control rounded-3" value="9">
-                                    <span class="input-group-text rounded-3">%</span>
-                                </div>
-                                <div class="form-text">Valstybinio socialinio draudimo įmoka</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">PSD (%)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.01" min="0" max="100" id="psdPercent" class="form-control rounded-3" value="6.98">
-                                    <span class="input-group-text rounded-3">%</span>
-                                </div>
-                                <div class="form-text">Privalomojo sveikatos draudimo įmoka</div>
-                            </div>
-                        </div>
-
-                        <!-- Tax preview -->
-                        <div class="mt-4 p-3 rounded-3" style="background: var(--primary-soft); border: 1px solid var(--border-color);">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="fa-solid fa-calculator text-primary"></i>
-                                <span class="fw-semibold small">Peržiūra: €1000 sąskaita</span>
-                            </div>
-                            <div class="row g-2 small">
-                                <div class="col-6 col-md-3">
-                                    <span class="text-muted">GPM:</span>
-                                    <span class="fw-bold ms-1" id="previewGPM">—</span>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <span class="text-muted">VSD:</span>
-                                    <span class="fw-bold ms-1" id="previewVSD">—</span>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <span class="text-muted">PSD:</span>
-                                    <span class="fw-bold ms-1" id="previewPSD">—</span>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <span class="text-muted">Į rankas:</span>
-                                    <span class="fw-bold ms-1 text-success" id="previewNet">—</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- REQUISITES CARD -->
-                <section class="card dashboard-card shadow-sm border-0 mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-1">
-                            <i class="fa-solid fa-building-columns me-2 text-primary opacity-75"></i>Sąskaitų rekvizitai
-                        </h5>
-                        <p class="text-muted small mb-4">Šie duomenys bus rodomi generuojamose PDF sąskaitose.</p>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">IBAN</label>
-                                <input type="text" id="reqIBAN" class="form-control rounded-3" placeholder="LTXX XXXX XXXX XXXX XXXX">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Bankas</label>
-                                <input type="text" id="reqBank" class="form-control rounded-3" placeholder="Swedbank">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Numatytoji valiuta</label>
-                                <select id="reqCurrency" class="form-select rounded-3">
-                                    <option value="EUR">EUR — Euro</option>
-                                    <option value="USD">USD — JAV doleris</option>
-                                    <option value="GBP">GBP — Svaras sterlingas</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">PVM mokėtojo kodas</label>
-                                <input type="text" id="reqVAT" class="form-control rounded-3" placeholder="LT000000000">
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- SAVE BUTTON -->
-                <div class="d-flex gap-3">
-                    <button type="button" id="saveSettingsBtn" class="btn btn-primary rounded-3 px-4">
-                        <i class="fa-solid fa-floppy-disk me-2"></i>Išsaugoti nustatymus
-                    </button>
-                    <button type="button" id="resetSettingsBtn" class="btn btn-outline-secondary rounded-3 px-4">
-                        <i class="fa-solid fa-rotate-left me-2"></i>Numatytieji
-                    </button>
-                </div>
-
-            </div>
-
-            <!-- SIDEBAR INFO -->
-            <div class="col-lg-4">
-                <section class="card dashboard-card shadow-sm border-0 mb-4">
-                    <div class="card-body p-4">
-                        <h6 class="fw-bold mb-3"><i class="fa-solid fa-circle-info me-2 text-primary opacity-75"></i>Lietuvos standartai</h6>
-                        <ul class="list-unstyled small text-muted mb-0" style="line-height: 2;">
-                            <li><span class="fw-semibold text-body">GPM</span> — 15%</li>
-                            <li><span class="fw-semibold text-body">Išlaidų atskaitymas</span> — 30%</li>
-                            <li><span class="fw-semibold text-body">VSD</span> — 9%</li>
-                            <li><span class="fw-semibold text-body">PSD</span> — 6,98%</li>
+            <!-- ── Šoninis meniu ─────────────────────────────── -->
+            <aside class="settings-sidebar">
+                <div class="card dashboard-card shadow-sm border-0">
+                    <div class="card-body p-2">
+                        <ul class="settings-sidebar-nav">
+                            <li>
+                                <a href="#" class="active" data-section="requisites">
+                                    <i class="fa-solid fa-building-columns"></i>
+                                    Sąskaitų rekvizitai
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" data-section="taxes">
+                                    <i class="fa-solid fa-percent"></i>
+                                    Mokesčių logika
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" data-section="security">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                    Saugumas
+                                </a>
+                            </li>
                         </ul>
                     </div>
-                </section>
+                </div>
+            </aside>
 
-                <section class="card dashboard-card shadow-sm border-0">
-                    <div class="card-body p-4">
-                        <h6 class="fw-bold mb-3"><i class="fa-solid fa-shield-halved me-2 text-success opacity-75"></i>Duomenų saugumas</h6>
-                        <p class="small text-muted mb-0">Visi nustatymai saugomi jūsų naršyklėje ir serveryje. Duomenys niekur nesiunčiami.</p>
+            <!-- ── Turinio blokai ─────────────────────────────── -->
+            <div class="settings-content">
+
+                <!-- ══ SEKCIJA: Sąskaitų rekvizitai ══════════════ -->
+                <div class="settings-section active" id="section-requisites">
+
+                    <section class="card dashboard-card shadow-sm border-0 mb-4">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-1">
+                                <i class="fa-solid fa-id-card me-2 text-primary opacity-75"></i>Asmens duomenys
+                            </h5>
+                            <p class="text-muted small mb-4">Rodoma generuojamose PDF sąskaitose.</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Vardas</label>
+                                    <input type="text" id="reqFirstName" class="form-control" placeholder="Jonas">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Pavardė</label>
+                                    <input type="text" id="reqLastName" class="form-control" placeholder="Jonaitis">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">IV pažymos numeris</label>
+                                    <input type="text" id="reqIVNumber" class="form-control" placeholder="300XXXXXXX">
+                                    <div class="form-text">Individualios veiklos pažymos Nr.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Bankas</label>
+                                    <input type="text" id="reqBank" class="form-control" placeholder="Swedbank">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">IBAN</label>
+                                    <input type="text" id="reqIBAN" class="form-control" placeholder="LT00 0000 0000 0000 0000">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card dashboard-card shadow-sm border-0 mb-4">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-1">
+                                <i class="fa-solid fa-file-invoice me-2 text-primary opacity-75"></i>Sąskaitų serija
+                            </h5>
+                            <p class="text-muted small mb-4">Naudojama generuojant sąskaitos numerį (pvz., FF-2026-001).</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        Sąskaitų serija
+                                        <span class="info-tip ms-1" data-bs-toggle="tooltip" title="Raidžių prefiksas, pvz. FF, INV, JJ">
+                                            <i class="fa-solid fa-circle-info text-muted"></i>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="reqSeries" class="form-control" placeholder="FF" maxlength="6">
+                                    <div class="form-text">Iki 6 simbolių, pvz. FF, INV</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        Pradinis numeris
+                                        <span class="info-tip ms-1" data-bs-toggle="tooltip" title="Nuo kurio skaičiaus pradėti numeruoti">
+                                            <i class="fa-solid fa-circle-info text-muted"></i>
+                                        </span>
+                                    </label>
+                                    <input type="number" id="reqStartNum" class="form-control" placeholder="1" min="1" value="1">
+                                    <div class="form-text">Kita sąskaita gaus šį numerį</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-2 rounded-3 small" style="background: var(--primary-soft); border: 1px solid var(--border-color);">
+                                        <i class="fa-solid fa-eye me-1 text-primary"></i>
+                                        Peržiūra: <strong id="invoiceNumPreview">FF-2026-001</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card dashboard-card shadow-sm border-0 mb-4">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-3">
+                                <i class="fa-solid fa-receipt me-2 text-primary opacity-75"></i>PVM
+                            </h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="isVatPayer" role="switch">
+                                <label class="form-check-label fw-semibold" for="isVatPayer">
+                                    Esu PVM mokėtojas
+                                </label>
+                            </div>
+                            <div id="vatCodeWrapper" style="display:none;">
+                                <label class="form-label fw-semibold">PVM mokėtojo kodas</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa-solid fa-tag"></i></span>
+                                    <input type="text" id="reqVAT" class="form-control" placeholder="LT000000000">
+                                </div>
+                                <div class="form-text">Bus spausdinamas sąskaitoje prie jūsų duomenų.</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="d-flex gap-3">
+                        <button type="button" id="saveRequisitesBtn" class="btn btn-primary rounded-3 px-4">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Išsaugoti
+                        </button>
                     </div>
-                </section>
+                </div>
+
+                <!-- ══ SEKCIJA: Mokesčių logika ════════════════════ -->
+                <div class="settings-section" id="section-taxes">
+
+                    <div class="row g-4 mb-4">
+                        <!-- Kairė: laukeliai -->
+                        <div class="col-lg-8">
+                            <section class="card dashboard-card shadow-sm border-0 mb-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-1">
+                                        <i class="fa-solid fa-percent me-2 text-warning opacity-75"></i>Mokesčių tarifai
+                                    </h5>
+                                    <p class="text-muted small mb-4">Naudojami skaičiuojant kiekvienos sąskaitos mokesčius.</p>
+
+                                    <!-- Išlaidų deklaravimo principas -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold">
+                                            Išlaidų deklaravimo principas
+                                            <span class="info-tip ms-1" data-bs-toggle="tooltip"
+                                                  title="Fiksuotas 30% – VMI leidžia automatiškai atskaityti 30% pajamų kaip išlaidas. Faktiškos – skaičiuojate realias išlaidas.">
+                                                <i class="fa-solid fa-circle-info text-muted"></i>
+                                            </span>
+                                        </label>
+                                        <select id="expensePrinciple" class="form-select">
+                                            <option value="fixed30">30% fiksuotas atskaitymas (VMI standartas)</option>
+                                            <option value="actual">Faktiškos išlaidos (su dokumentais)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">GPM (%)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-coins"></i></span>
+                                                <input type="number" step="0.01" min="0" max="100" id="gpmPercent" class="form-control" value="15">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">Gyventojų pajamų mokestis</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Išlaidų atskaitymas (%)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-tags"></i></span>
+                                                <input type="number" step="0.01" min="0" max="100" id="expenseDeductionPercent" class="form-control" value="30">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">Fiksuotas atskaitymas nuo pajamų</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">VSD (%)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-heart-pulse"></i></span>
+                                                <input type="number" step="0.01" min="0" max="100" id="vsdPercent" class="form-control" value="9">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">Valstybinis socialinis draudimas</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">PSD (%)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-stethoscope"></i></span>
+                                                <input type="number" step="0.01" min="0" max="100" id="psdPercent" class="form-control" value="6.98">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">Privalomasis sveikatos draudimas</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Peržiūra -->
+                                    <div class="mt-4 p-3 rounded-3 tax-preview-box" style="background: var(--primary-soft); border: 1px solid var(--border-color);">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="fa-solid fa-calculator text-primary"></i>
+                                            <span class="fw-semibold small">Peržiūra: €1 000 sąskaita</span>
+                                        </div>
+                                        <div class="row g-2 small">
+                                            <div class="col-6 col-md-3">
+                                                <span class="text-muted tax-preview-label">GPM:</span>
+                                                <span class="fw-bold ms-1" id="previewGPM">—</span>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <span class="text-muted tax-preview-label">VSD:</span>
+                                                <span class="fw-bold ms-1" id="previewVSD">—</span>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <span class="text-muted tax-preview-label">PSD:</span>
+                                                <span class="fw-bold ms-1" id="previewPSD">—</span>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <span class="text-muted tax-preview-label">Į rankas:</span>
+                                                <span class="fw-bold ms-1 text-success" id="previewNet">—</span>
+                                            </div>
+                                        </div>
+                                        <!-- Paaiškinimas dėl 30% taisyklės -->
+                                        <div class="mt-2 pt-2 border-top small text-muted" style="border-color: var(--border-color) !important;">
+                                            <i class="fa-solid fa-circle-info me-1 text-primary opacity-75"></i>
+                                            <strong>Kodėl skaičiai mažesni nei tikitės?</strong>
+                                            Taikant 30% fiksuotą atskaitymą, mokesčių bazė = <em>pajamos × 70%</em>.
+                                            GPM ir socialiniai mokesčiai skaičiuojami nuo šios sumažintos bazės, todėl efektyvus mokestis nėra lygus nominaliems procentams nuo visos sumos.
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Dešinė: LT šablonas -->
+                        <div class="col-lg-4">
+                            <section class="card dashboard-card shadow-sm border-0 lt-template-card mb-4" id="ltTemplateCard" title="Spustelėkite, kad užpildytumėte Lietuvos standartais">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-1">
+                                        <i class="fa-solid fa-flag me-2 text-primary opacity-75"></i>Lietuvos standartai
+                                    </h6>
+                                    <p class="apply-hint mb-3">↑ Spustelėkite, kad pritaikytumėte</p>
+                                    <ul class="list-unstyled small text-muted mb-0" style="line-height: 2.2;">
+                                        <li><span class="fw-semibold text-body">GPM</span> — 15%</li>
+                                        <li><span class="fw-semibold text-body">Išlaidų atskaitymas</span> — 30%</li>
+                                        <li><span class="fw-semibold text-body">VSD</span> — 9%</li>
+                                        <li><span class="fw-semibold text-body">PSD</span> — 6,98%</li>
+                                    </ul>
+                                    <div class="mt-3 pt-2 border-top small text-muted" style="border-color: var(--border-color) !important;">
+                                        <i class="fa-solid fa-circle-check text-success me-1"></i>
+                                        Individualios veiklos standartas 2025–2026
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="card dashboard-card shadow-sm border-0">
+                                <div class="card-body p-4">
+                                    <h6 class="fw-bold mb-3">
+                                        <i class="fa-solid fa-shield-halved me-2 text-success opacity-75"></i>Duomenų saugumas
+                                    </h6>
+                                    <p class="small text-muted mb-0">Jūsų duomenys saugomi šifruotoje duomenų bazėje serveryje ir yra pasiekiami tik jums. Mes neperduodame jūsų informacijos trečiosioms šalims.</p>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="button" id="saveTaxBtn" class="btn btn-primary rounded-3 px-4">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Išsaugoti mokesčius
+                        </button>
+                        <button type="button" id="resetTaxBtn" class="btn btn-outline-secondary rounded-3 px-4">
+                            <i class="fa-solid fa-rotate-left me-2"></i>Numatytieji
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ══ SEKCIJA: Saugumas ════════════════════════════ -->
+                <div class="settings-section" id="section-security">
+
+                    <section class="card dashboard-card shadow-sm border-0 mb-4">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-1">
+                                <i class="fa-solid fa-key me-2 text-primary opacity-75"></i>Slaptažodžio keitimas
+                            </h5>
+                            <p class="text-muted small mb-4">Po pakeitimo reikės prisijungti iš naujo.</p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Dabartinis slaptažodis</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                                        <input type="password" id="currentPassword" class="form-control" placeholder="••••••••" autocomplete="current-password">
+                                        <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Naujas slaptažodis</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                                        <input type="password" id="newPassword" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8">
+                                        <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+                                    </div>
+                                    <div class="progress mt-2" style="height:4px;">
+                                        <div id="secStrengthBar" class="progress-bar" style="width:0%"></div>
+                                    </div>
+                                    <div id="secStrengthText" class="form-text"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Pakartoti naują slaptažodį</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                                        <input type="password" id="newPassword2" class="form-control" placeholder="••••••••" autocomplete="new-password">
+                                        <button type="button" class="btn btn-outline-secondary password-toggle" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+                                    </div>
+                                    <div id="secMatchText" class="form-text"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="d-flex gap-3 mb-4">
+                        <button type="button" id="changePasswordBtn" class="btn btn-primary rounded-3 px-4">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Keisti slaptažodį
+                        </button>
+                    </div>
+
+                    <!-- Paskyros trynimas -->
+                    <section class="card dashboard-card border-0 mb-4 danger-zone">
+                        <div class="card-body p-4">
+                            <h5 class="card-title text-danger mb-1">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Pavojaus zona
+                            </h5>
+                            <p class="text-muted small mb-3">Paskyros ištrynimas yra negrįžtamas. Visi jūsų duomenys bus ištrinti visam laikui.</p>
+                            <button type="button" class="btn btn-outline-danger rounded-3 px-4"
+                                    data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                <i class="fa-solid fa-trash-can me-2"></i>Ištrinti paskyrą
+                            </button>
+                        </div>
+                    </section>
+
+                </div><!-- /section-security -->
+
+            </div><!-- /settings-content -->
+        </div><!-- /settings-layout -->
+    </main>
+
+    <!-- Modal: paskyros trynimas -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger" id="deleteAccountModalLabel">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Ištrinti paskyrą?
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Visi jūsų duomenys – sąskaitos, nustatymai, rekvizitai – bus <strong>negrįžtamai ištrinti</strong>. Šio veiksmo atšaukti neįmanoma.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Patvirtinkite įvesdami: <code>IŠTRINTI</code></label>
+                        <input type="text" id="deleteConfirmInput" class="form-control" placeholder="IŠTRINTI">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Atšaukti</button>
+                    <button type="button" id="confirmDeleteBtn" class="btn btn-danger rounded-3" disabled>
+                        <i class="fa-solid fa-trash-can me-2"></i>Ištrinti visam laikui
+                    </button>
+                </div>
             </div>
         </div>
-    </main>
+    </div>
 
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-content">
-                <div class="footer-left">
-                    <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
-                </div>
-                <div class="footer-center">
-                    <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
-                </div>
+                <div class="footer-left"><p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p></div>
+                <div class="footer-center"><p class="footer-contact-info">Kontaktas: db280121@gmail.com</p></div>
                 <div class="footer-right">
                     <div class="footer-social">
-                        <a href="https://t.me/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
-                        <a href="https://twitter.com/DaniilB287715" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                        <a href="https://t.me/jusu_vartotojo_vardas"   class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+                        <a href="https://twitter.com/DaniilB287715"    class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
                         <a href="https://linkedin.com/in/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-                        <a href="https://github.com/DaniilBolshoj" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                        <a href="https://github.com/DaniilBolshoj"     class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
                     </div>
                 </div>
             </div>
@@ -329,5 +493,147 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+    // ── Tema: tik pradinė būsena – script.js valdo toggle ─────────
+    // (Kintamieji html/themeToggle jau deklaruoti script.js,
+    //  todėl čia IIFE, kad nekiltų SyntaxError)
+    (function() {
+        var _h = document.documentElement;
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark') _h.setAttribute('data-theme', 'dark');
+        else _h.removeAttribute('data-theme');
+    })();
+
+    // ── Hamburger ─────────────────────────────────────────────────
+    const hamburger  = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (hamburger && mobileMenu) {
+        hamburger.addEventListener('click', () => {
+            const open = mobileMenu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', open);
+        });
+    }
+
+    // ── Tooltips ──────────────────────────────────────────────────
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+
+    // ── Šoninio meniu navigacija ──────────────────────────────────
+    const sidebarLinks = document.querySelectorAll('.settings-sidebar-nav a[data-section]');
+    const sections     = document.querySelectorAll('.settings-section');
+
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const target = link.dataset.section;
+            sidebarLinks.forEach(l => l.classList.remove('active'));
+            sections.forEach(s => s.classList.remove('active'));
+            link.classList.add('active');
+            document.getElementById('section-' + target)?.classList.add('active');
+        });
+    });
+
+    // ── PVM checkbox ──────────────────────────────────────────────
+    const vatCheckbox   = document.getElementById('isVatPayer');
+    const vatCodeWrapper= document.getElementById('vatCodeWrapper');
+    vatCheckbox?.addEventListener('change', () => {
+        vatCodeWrapper.style.display = vatCheckbox.checked ? 'block' : 'none';
+    });
+
+    // ── LT šablonas (spustelimas užpildo laukus) ──────────────────
+    document.getElementById('ltTemplateCard')?.addEventListener('click', () => {
+        document.getElementById('gpmPercent').value              = '15';
+        document.getElementById('expenseDeductionPercent').value = '30';
+        document.getElementById('vsdPercent').value              = '9';
+        document.getElementById('psdPercent').value              = '6.98';
+        document.getElementById('expensePrinciple').value        = 'fixed30';
+        updateTaxPreview();
+        // Vizualinis flash efektas
+        const card = document.getElementById('ltTemplateCard');
+        card.style.borderColor = 'var(--primary)';
+        setTimeout(() => card.style.borderColor = '', 1200);
+    });
+
+    // ── Mokesčių peržiūra (realiu laiku) ──────────────────────────
+    function updateTaxPreview() {
+        const gpm  = parseFloat(document.getElementById('gpmPercent')?.value) || 0;
+        const exp  = parseFloat(document.getElementById('expenseDeductionPercent')?.value) || 0;
+        const vsd  = parseFloat(document.getElementById('vsdPercent')?.value) || 0;
+        const psd  = parseFloat(document.getElementById('psdPercent')?.value) || 0;
+        const base = 1000;
+        const taxBase = base * (1 - exp / 100);
+        const gpmAmt  = taxBase * (gpm / 100);
+        const vsdAmt  = taxBase * (vsd / 100);
+        const psdAmt  = taxBase * (psd / 100);
+        const net     = base - gpmAmt - vsdAmt - psdAmt;
+        document.getElementById('previewGPM').textContent = '€' + gpmAmt.toFixed(2);
+        document.getElementById('previewVSD').textContent = '€' + vsdAmt.toFixed(2);
+        document.getElementById('previewPSD').textContent = '€' + psdAmt.toFixed(2);
+        document.getElementById('previewNet').textContent = '€' + net.toFixed(2);
+    }
+    ['gpmPercent','expenseDeductionPercent','vsdPercent','psdPercent'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', updateTaxPreview);
+    });
+    updateTaxPreview();
+
+    // ── Sąskaitos numerio peržiūra ────────────────────────────────
+    function updateInvoicePreview() {
+        const series   = (document.getElementById('reqSeries')?.value   || 'FF').toUpperCase();
+        const startNum = parseInt(document.getElementById('reqStartNum')?.value) || 1;
+        const year     = new Date().getFullYear();
+        const numStr   = String(startNum).padStart(3, '0');
+        document.getElementById('invoiceNumPreview').textContent = `${series}-${year}-${numStr}`;
+    }
+    ['reqSeries','reqStartNum'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', updateInvoicePreview);
+    });
+    updateInvoicePreview();
+
+    // ── Slaptažodžio rodymas/slėpimas ─────────────────────────────
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = btn.closest('.input-group').querySelector('input');
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            btn.innerHTML = isPass ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+        });
+    });
+
+    // ── Slaptažodžio stiprumas (saugumo sekcija) ──────────────────
+    const newPw = document.getElementById('newPassword');
+    const newPw2= document.getElementById('newPassword2');
+    const sBar  = document.getElementById('secStrengthBar');
+    const sTxt  = document.getElementById('secStrengthText');
+    const mTxt  = document.getElementById('secMatchText');
+
+    newPw?.addEventListener('input', () => {
+        const v = newPw.value; let score = 0;
+        if (v.length>=8) score++; if (v.length>=12) score++;
+        if (/[A-Z]/.test(v)) score++; if (/[0-9]/.test(v)) score++;
+        if (/[^A-Za-z0-9]/.test(v)) score++;
+        const levels = [
+            {cls:'',pct:0,lbl:''},{cls:'bg-danger',pct:20,lbl:'Labai silpnas'},
+            {cls:'bg-warning',pct:40,lbl:'Silpnas'},{cls:'bg-info',pct:60,lbl:'Vidutinis'},
+            {cls:'bg-success',pct:80,lbl:'Stiprus'},{cls:'bg-success',pct:100,lbl:'Labai stiprus'}
+        ];
+        const lvl = levels[Math.min(score,5)];
+        sBar.style.width = lvl.pct + '%'; sBar.className = 'progress-bar ' + lvl.cls;
+        sTxt.textContent = lvl.lbl;
+        checkSecMatch();
+    });
+    newPw2?.addEventListener('input', checkSecMatch);
+    function checkSecMatch() {
+        if (!newPw2.value) { mTxt.textContent=''; return; }
+        mTxt.innerHTML = newPw.value === newPw2.value
+            ? '<span class="text-success"><i class="fa-solid fa-check me-1"></i>Sutampa</span>'
+            : '<span class="text-danger"><i class="fa-solid fa-xmark me-1"></i>Nesutampa</span>';
+    }
+
+    // ── Paskyros trynimo patvirtinimas ────────────────────────────
+    const deleteInput  = document.getElementById('deleteConfirmInput');
+    const deleteBtn    = document.getElementById('confirmDeleteBtn');
+    deleteInput?.addEventListener('input', () => {
+        deleteBtn.disabled = deleteInput.value.trim() !== 'IŠTRINTI';
+    });
+    </script>
 </body>
 </html>

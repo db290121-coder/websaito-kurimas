@@ -3,20 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gilioji analizė</title>
+    <title>Gilioji analizė – FreelanceFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── Typography override ── */
+        body { font-family: 'DM Sans', sans-serif !important; }
+
+        /* ── View toggle ── */
+        .view-toggle {
+            display: flex; gap: 0;
+            border-radius: 12px; overflow: hidden;
+            border: 1.5px solid var(--border-color, #e2e8f0);
+            background: var(--surface);
+            padding: 3px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+        .view-toggle-btn {
+            flex: 1; padding: 7px 18px; border: none; font-weight: 600;
+            font-size: .82rem; cursor: pointer; border-radius: 9px;
+            transition: background .18s, color .18s, box-shadow .18s;
+            background: transparent; color: var(--muted, #64748b);
+            font-family: 'DM Sans', sans-serif;
+        }
+        .view-toggle-btn:hover { color: var(--text); }
+        .view-toggle-btn.active[data-view="profit"] {
+            background: #22c55e; color: #fff;
+            box-shadow: 0 2px 8px rgba(34,197,94,.35);
+        }
+        .view-toggle-btn.active[data-view="taxes"] {
+            background: #ef4444; color: #fff;
+            box-shadow: 0 2px 8px rgba(239,68,68,.35);
+        }
+        [data-theme="dark"] .view-toggle { border-color: rgba(255,255,255,.1); background: #1a1a1a; }
+
+        /* ── KPI kortelės ── */
+        .kpi-card {
+            transition: border-color .25s, transform .2s, box-shadow .2s;
+            border: 1.5px solid var(--border-color, #e0e7ff) !important;
+            border-radius: 14px !important;
+        }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,70,229,.1) !important; }
+        .kpi-card.accent-profit { border-color: rgba(34,197,94,.5) !important; background: rgba(34,197,94,.03) !important; }
+        .kpi-card.accent-taxes  { border-color: rgba(239,68,68,.5) !important; background: rgba(239,68,68,.03) !important; }
+        .kpi-card .h4, .kpi-card .h4.fw-bold { font-family: 'DM Mono', monospace; letter-spacing: -.02em; }
+        [data-theme="dark"] .kpi-card { border-color: rgba(255,255,255,.08) !important; }
+
+        /* ── Chart cards polish ── */
+        .dashboard-card {
+            border-radius: 16px !important;
+            border: 1.5px solid var(--border-color, #e0e7ff) !important;
+            transition: box-shadow .2s;
+        }
+        .dashboard-card:hover { box-shadow: 0 8px 32px rgba(79,70,229,.08) !important; }
+        [data-theme="dark"] .dashboard-card { border-color: rgba(255,255,255,.07) !important; }
+
+        /* ── Period badge ── */
+        #mainChartPeriod {
+            font-family: 'DM Mono', monospace;
+            font-size: .72rem; font-weight: 500;
+            background: var(--primary-soft) !important;
+            color: var(--primary) !important;
+            border-radius: 8px; padding: 4px 10px;
+        }
+        [data-theme="dark"] #mainChartPeriod { background: rgba(99,102,241,.15) !important; color: #a5b4fc !important; }
+
+        /* ── Income change ── */
+        #incomeChangePercent { font-family: 'DM Mono', monospace; font-size: 2.4rem !important; letter-spacing: -.04em; }
+        .change-detail-box { background: var(--primary-soft); border: 1px solid var(--border-color); border-radius: 12px; }
+        [data-theme="dark"] .change-detail-box { background: rgba(99,102,241,.08); border-color: rgba(99,102,241,.2); }
+
+        /* ── Empty state ── */
+        .chart-empty {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 220px; gap: 12px;
+            color: var(--muted, #64748b);
+        }
+        .chart-empty i { font-size: 2.5rem; opacity: .3; }
+
+        /* ── Spalvos pagal rodinį ── */
+        .view-accent-profit { color: #22c55e !important; }
+        .view-accent-taxes  { color: #ef4444 !important; }
+
+        /* ── Header eyebrow tag ── */
+        .eyebrow-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--primary);
+            background: var(--primary-soft); padding: 4px 12px;
+            border-radius: 20px; margin-bottom: 8px;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- ── Topbar ──────────────────────────────────────────────── -->
     <nav class="topbar">
         <div class="topbar-inner">
-    
-            <!-- Brand -->
             <a href="/" class="brand-group text-decoration-none">
                 <div class="brand-icon"><i class="fa-solid fa-rocket"></i></div>
                 <div>
@@ -24,226 +113,243 @@
                     <div class="brand-tagline">Invoice &amp; finance hub</div>
                 </div>
             </a>
-    
-            <!-- Desktop meniu -->
             <ul class="topbar-menu topbar-menu--desktop">
-                <li><a href="/"              class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
-                <li><a href="/archive.html"  class="topbar-link {% if '/archive' in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
-                <li><a href="/analytics.html"class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
-                <li><a href="/settings.html" class="topbar-link {% if '/settings' in request.path %}active{% endif %}">Nustatymai</a></li>
+                <li><a href="/"               class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
+                <li><a href="/archive.html"   class="topbar-link {% if '/archive'   in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
+                <li><a href="/analytics.html" class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
+                {% if not current_user.is_authenticated %}
+                <li><a href="/settings.html"  class="topbar-link {% if '/settings'  in request.path %}active{% endif %}">Nustatymai</a></li>
+                {% endif %}
             </ul>
-    
-            <!-- Dešinė pusė: tema + auth (desktop) -->
             <div class="topbar-actions">
                 <button id="theme-toggle" class="theme-toggle-btn" title="Keisti temą">
                     <i class="fa-solid fa-moon"></i>
                 </button>
-    
                 {% if current_user.is_authenticated %}
-                    {# Prisijungęs vartotojas – rodome vardą ir išeiti #}
                     <div class="dropdown d-none d-lg-flex align-items-center">
                         <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
-                            <i class="fa-solid fa-user me-1"></i>
-                            {{ current_user.username }}
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-user me-1"></i>{{ current_user.username }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <span class="dropdown-item-text small text-muted">
-                                    {{ current_user.email }}
-                                </span>
-                            </li>
+                            <li><span class="dropdown-item-text small text-muted">{{ current_user.email }}</span></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item small" href="/settings.html">
-                                    <i class="fa-solid fa-gear me-2"></i>Nustatymai
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item small text-danger" href="{{ url_for('logout') }}">
-                                    <i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item small" href="/settings.html"><i class="fa-solid fa-gear me-2"></i>Nustatymai</a></li>
+                            <li><a class="dropdown-item small text-danger" href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti</a></li>
                         </ul>
                     </div>
                 {% else %}
-                    {# Neprisijungęs – Prisijungti / Registruotis (desktop) #}
                     <div class="d-none d-lg-flex align-items-center gap-2">
-                        <a href="{{ url_for('login') }}"
-                        class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                            <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
-                        </a>
-                        <a href="{{ url_for('register') }}"
-                        class="btn btn-sm btn-primary rounded-pill px-3">
-                            <i class="fa-solid fa-user-plus me-1"></i>Registruotis
-                        </a>
+                        <a href="{{ url_for('login') }}"    class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary rounded-pill px-3"><i class="fa-solid fa-user-plus me-1"></i>Registruotis</a>
                     </div>
                 {% endif %}
-    
-                <!-- Hamburger (mobile) -->
                 <button id="hamburger" class="hamburger" aria-label="Meniu" aria-expanded="false">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
-    
         </div>
-    
-        {# ── Mobile išskleidžiamas meniu ──────────────────────────────────────── #}
         <ul class="topbar-menu topbar-menu--mobile" id="mobile-menu">
             <li><a href="/"               class="topbar-link">Apžvalga</a></li>
             <li><a href="/archive.html"   class="topbar-link">Sąskaitų archyvas</a></li>
             <li><a href="/analytics.html" class="topbar-link">Gilioji analizė</a></li>
+            {% if not current_user.is_authenticated %}
             <li><a href="/settings.html"  class="topbar-link">Nustatymai</a></li>
-    
-            {# Auth sekcija mobile meniu apačioje #}
+            {% endif %}
             <li class="topbar-menu-divider"></li>
-    
             {% if current_user.is_authenticated %}
                 <li class="topbar-menu-auth">
                     <i class="fa-solid fa-user text-muted me-1"></i>
                     <span class="small text-muted">{{ current_user.username }}</span>
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti
-                    </a>
-                </li>
+                <li><a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small"><i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti</a></li>
             {% else %}
-                <li>
-                    <a href="{{ url_for('login') }}" class="topbar-link small">
-                        <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('register') }}" class="topbar-link small">
-                        <i class="fa-solid fa-user-plus me-1"></i>Registruotis
-                    </a>
-                </li>
+                <li><a href="{{ url_for('login') }}"    class="topbar-link small"><i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti</a></li>
+                <li><a href="{{ url_for('register') }}" class="topbar-link small"><i class="fa-solid fa-user-plus me-1"></i>Registruotis</a></li>
             {% endif %}
         </ul>
     </nav>
+
+    <!-- ── Main ────────────────────────────────────────────────── -->
     <main class="container py-5">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
-                    <div>
-                        <h1 class="display-6 fw-bold mb-2">Gilioji analizė</h1>
-                        <p class="text-muted">Detalūs finansiniai rodikliai, tendencijos ir strateginės analitikos.</p>
-                    </div>
+
+        <!-- Antraštė + filtrai -->
+        <div class="row mb-4 align-items-end g-3">
+            <div class="col-12 col-md-auto">
+                <div class="eyebrow-tag">
+                    <i class="fa-solid fa-chart-line"></i>Gilioji analizė
+                </div>
+                <h1 class="fw-bold mb-0" style="font-size:1.8rem;letter-spacing:-.03em;">Finansų valdymo centras</h1>
+                <p class="mb-0" style="color:var(--muted);font-size:.875rem;margin-top:3px;">Duomenys tiesiogiai iš jūsų sąskaitų archyvo.</p>
+            </div>
+            <div class="col-12 col-md-auto ms-md-auto d-flex flex-wrap gap-2 align-items-center">
+                <!-- Metų filtras -->
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small fw-semibold text-muted mb-0 text-nowrap">Metai:</label>
+                    <select id="yearFilter" class="form-select form-select-sm" style="width:auto; min-width:90px;">
+                        <option value="all">Visi</option>
+                    </select>
+                </div>
+                <!-- View toggle -->
+                <div class="view-toggle" role="group" aria-label="Analizės rodinys">
+                    <button class="view-toggle-btn active" data-view="profit" title="Grynasis pelnas">
+                        <i class="fa-solid fa-hand-holding-dollar me-1"></i>Pelnas
+                    </button>
+                    <button class="view-toggle-btn" data-view="taxes" title="Mokesčių planavimas">
+                        <i class="fa-solid fa-percent me-1"></i>Mokesčiai
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- YEARLY TREND -->
-        <div class="row g-4 mb-4">
-            <div class="col-12">
-                <section class="card dashboard-card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title mb-4"><i class="fa-solid fa-chart-line"></i> Metinė tendencija</h5>
-                        <div class="chart-container" style="position: relative; min-height: 350px;">
-                            <canvas id="yearlyTrendChart"></canvas>
-                        </div>
-                    </div>
-                </section>
-            </div>
+        <!-- Įkrovimo indikatorius -->
+        <div id="analyticsLoader" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-3 small">Kraunami duomenys...</p>
         </div>
 
-        <!-- MONTHLY COMPARISON & PIE CHART -->
-        <div class="row g-4">
+        <!-- Turinys (slepiamas kol kraunama) -->
+        <div id="analyticsContent" style="display:none;">
 
-            <!-- DONUT CHART -->
-            <div class="col-lg-4">
-
-                <section class="card dashboard-card shadow-sm border-0 h-100">
-                    <div class="card-body">
-
-                        <h5 class="card-title mb-4">
-                            <i class="fa-solid fa-chart-pie"></i>
-                            Mokesčių išskaidymas
-                        </h5>
-
-                        <div class="chart-container"
-                            style="position: relative; min-height: 320px;">
-
-                            <canvas id="taxDonutChart"></canvas>
-
+            <!-- KPI kortelės -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100 kpi-card" id="kpiCardRevenue">
+                        <div class="card-body p-3">
+                            <div class="small text-muted mb-1"><i class="fa-solid fa-coins me-1"></i>Visos pajamos (bruto)</div>
+                            <div class="h4 fw-bold mb-0" id="kpiTotalRevenue">—</div>
                         </div>
-
                     </div>
-                </section>
-
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100 kpi-card" id="kpiCardNet">
+                        <div class="card-body p-3">
+                            <div class="small text-muted mb-1"><i class="fa-solid fa-hand-holding-dollar me-1"></i>Likutis į rankas</div>
+                            <div class="h4 fw-bold text-success mb-0" id="kpiTotalNet">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100 kpi-card" id="kpiCardTax">
+                        <div class="card-body p-3">
+                            <div class="small text-muted mb-1"><i class="fa-solid fa-percent me-1"></i>Sumokėti mokesčiai</div>
+                            <div class="h4 fw-bold text-danger mb-0" id="kpiTotalTax">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card dashboard-card border-0 shadow-sm h-100 kpi-card" id="kpiCardCount">
+                        <div class="card-body p-3">
+                            <div class="small text-muted mb-1"><i class="fa-solid fa-file-invoice me-1"></i>Sąskaitų / Vid. suma</div>
+                            <div class="h4 fw-bold mb-0" id="kpiInvoiceCount">—</div>
+                            <div class="small text-muted" id="kpiAvgInvoice"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- MONTHLY INDICATOR -->
-            <div class="col-lg-4">
-
-                <section class="card dashboard-card shadow-sm border-0 h-100">
-                    <div class="card-body">
-
-                        <h5 class="card-title mb-4">
-                            <i class="fa-solid fa-arrow-trend-up"></i>
-                            Pajamų pokytis
-                        </h5>
-
-                        <div class="text-center py-5">
-
-                            <h2 class="display-4 fw-bold text-success">
-                                +18%
-                            </h2>
-
-                            <p class="text-muted mb-0">
-                                Palyginus su praėjusiu mėnesiu
-                            </p>
-
+            <!-- Pagrindinis grafikas: Stacked Bar (pajamos + mokesčiai) -->
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <section class="card dashboard-card shadow-sm border-0">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                                <h5 class="card-title mb-0" id="mainChartTitle">
+                                    <i class="fa-solid fa-chart-bar me-2"></i>Pajamų ir pelno dinamika
+                                </h5>
+                                <span class="badge bg-secondary-subtle text-secondary small" id="mainChartPeriod">—</span>
+                            </div>
+                            <div id="mainChartEmpty" class="chart-empty d-none">
+                                <i class="fa-solid fa-chart-bar"></i>
+                                <span>Nėra duomenų pasirinktam periodui</span>
+                            </div>
+                            <div class="chart-container" style="position:relative; min-height:340px;" id="mainChartWrap">
+                                <canvas id="mainChart"></canvas>
+                            </div>
                         </div>
-
-                    </div>
-                </section>
-
+                    </section>
+                </div>
             </div>
 
-            <!-- YEARLY CURVE -->
-            <div class="col-lg-4">
+            <!-- Antroji eilutė: Donut + pajamų pokytis + kreivė -->
+            <div class="row g-4 mb-4">
 
-                <section class="card dashboard-card shadow-sm border-0 h-100">
-                    <div class="card-body">
-
-                        <h5 class="card-title mb-4">
-                            <i class="fa-solid fa-chart-line"></i>
-                            Metinė pajamų kreivė
-                        </h5>
-
-                        <div class="chart-container"
-                            style="position: relative; min-height: 320px;">
-
-                            <canvas id="yearlyIncomeCurve"></canvas>
-
+                <!-- Donut: mokesčių išskaidymas su procentais -->
+                <div class="col-lg-4">
+                    <section class="card dashboard-card shadow-sm border-0 h-100">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h5 class="card-title mb-4">
+                                <i class="fa-solid fa-chart-pie me-2"></i>Mokesčių išskaidymas
+                            </h5>
+                            <div id="donutEmpty" class="chart-empty d-none flex-grow-1">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                <span>Nėra mokesčių duomenų</span>
+                            </div>
+                            <div class="chart-container flex-grow-1" style="position:relative; min-height:280px;" id="donutWrap">
+                                <canvas id="taxDonutChart"></canvas>
+                            </div>
                         </div>
+                    </section>
+                </div>
 
-                    </div>
-                </section>
+                <!-- Pajamų pokytis -->
+                <div class="col-lg-4">
+                    <section class="card dashboard-card shadow-sm border-0 h-100">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h5 class="card-title mb-3">
+                                <i class="fa-solid fa-arrow-trend-up me-2"></i>Pajamų pokytis
+                            </h5>
+                            <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center py-3">
+                                <h2 id="incomeChangePercent" class="display-4 fw-bold text-success mb-1">—</h2>
+                                <p class="text-muted small mb-2" id="changeDesc">Palyginus su praėjusiu mėnesiu</p>
+                                <div class="w-100 mt-2 p-2 rounded-3 small change-detail-box" style="border:1px solid var(--border-color)">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Praėjęs mėn.</span>
+                                        <span class="fw-semibold" id="changePrevMonth">—</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <span class="text-muted">Dabartinis mėn.</span>
+                                        <span class="fw-semibold" id="changeCurrMonth">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
 
+                <!-- Metinė kreivė -->
+                <div class="col-lg-4">
+                    <section class="card dashboard-card shadow-sm border-0 h-100">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h5 class="card-title mb-4" id="curveTitle">
+                                <i class="fa-solid fa-chart-line me-2"></i>Pajamų kreivė
+                            </h5>
+                            <div id="curveEmpty" class="chart-empty d-none flex-grow-1">
+                                <i class="fa-solid fa-chart-line"></i>
+                                <span>Per mažai duomenų</span>
+                            </div>
+                            <div class="chart-container flex-grow-1" style="position:relative; min-height:220px;" id="curveWrap">
+                                <canvas id="yearlyIncomeCurve"></canvas>
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </div>
 
-        </div>
+        </div><!-- /analyticsContent -->
     </main>
+
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-content">
-                <div class="footer-left">
-                    <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
-                </div>
-                <div class="footer-center">
-                    <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
-                </div>
+                <div class="footer-left"><p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p></div>
+                <div class="footer-center"><p class="footer-contact-info">Kontaktas: db280121@gmail.com</p></div>
                 <div class="footer-right">
                     <div class="footer-social">
-                        <a href="https://t.me/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
-                        <a href="https://twitter.com/DaniilB287715" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                        <a href="https://t.me/jusu_vartotojo_vardas"   class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+                        <a href="https://twitter.com/DaniilB287715"    class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
                         <a href="https://linkedin.com/in/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-                        <a href="https://github.com/DaniilBolshoj" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                        <a href="https://github.com/DaniilBolshoj"     class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
                     </div>
                 </div>
             </div>
@@ -256,5 +362,509 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+    /* ═══════════════════════════════════════════════════════════════
+       ANALYTICS PAGE — pilnas valdymas
+       ═══════════════════════════════════════════════════════════════ */
+    (function() {
+        // Pradinė tema (script.js valdo toggle)
+        var _h = document.documentElement;
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark') _h.setAttribute('data-theme','dark');
+        else _h.removeAttribute('data-theme');
+    })();
+
+    // ── Kintamieji ─────────────────────────────────────────────────
+    let currentView = 'profit'; // 'profit' | 'taxes'
+    let currentYear = 'all';
+    let apiData     = null;     // paskutiniai gauti duomenys iš /api/analytics
+
+    // ── Chart.js instancijos ───────────────────────────────────────
+    let chartMain  = null;
+    let chartDonut = null;
+    let chartCurve = null;
+
+    // ── Pagalbinės funkcijos ───────────────────────────────────────
+    function isDark() {
+        return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+    function chartColors() {
+        const dark = isDark();
+        return {
+            text:    dark ? '#e2e8f0' : '#1a202c',
+            muted:   dark ? '#94a3b8' : '#64748b',
+            grid:    dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)',
+            tooltip: dark ? '#1e2535' : '#ffffff',
+        };
+    }
+    function fmt(n) { return '€ ' + parseFloat(n || 0).toFixed(2); }
+    function setEl(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+    // Rodo/slepia tuščią būseną virš canvas
+    function toggleEmpty(emptyId, wrapId, isEmpty) {
+        const empty = document.getElementById(emptyId);
+        const wrap  = document.getElementById(wrapId);
+        if (!empty || !wrap) return;
+        if (isEmpty) { empty.classList.remove('d-none'); wrap.style.visibility='hidden'; }
+        else         { empty.classList.add('d-none');    wrap.style.visibility=''; }
+    }
+
+    // ── Metų filtro užpildymas ─────────────────────────────────────
+    function populateYearFilter(years) {
+        const sel = document.getElementById('yearFilter');
+        if (!sel) return;
+        // Tik pirmo karto užpildymas – jei opcijos jau yra, tik atstatome pasirinktą reikšmę
+        if (sel.options.length > 1) {
+            sel.value = currentYear;
+            return;
+        }
+        while (sel.options.length > 1) sel.remove(1);
+        (years || []).sort().reverse().forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y; opt.textContent = y; sel.appendChild(opt);
+        });
+        // Atstatome pasirinktą reikšmę po sukūrimo
+        sel.value = currentYear;
+    }
+
+    // ── KPI kortelių atnaujinimas ──────────────────────────────────
+    function updateKpi(totals, kpi) {
+        setEl('kpiTotalRevenue', fmt(totals.bruto));
+        setEl('kpiTotalNet',     fmt(totals.neto));
+        setEl('kpiTotalTax',     fmt(totals.taxes));
+        setEl('kpiInvoiceCount', totals.count);
+        setEl('kpiAvgInvoice',   'Vid.: ' + fmt(totals.avg_invoice));
+
+        // KPI kortelių akcento spalvos pagal rodinį
+        const netCard = document.getElementById('kpiCardNet');
+        const taxCard = document.getElementById('kpiCardTax');
+        if (netCard) {
+            netCard.classList.toggle('accent-profit', currentView === 'profit');
+            netCard.classList.remove('accent-taxes');
+        }
+        if (taxCard) {
+            taxCard.classList.toggle('accent-taxes', currentView === 'taxes');
+            taxCard.classList.remove('accent-profit');
+        }
+
+        // Pajamų pokytis
+        const pct    = parseFloat(kpi.change_pct || 0);
+        const sign   = pct > 0 ? '+' : '';
+        const pctStr = pct === 0 ? '0%' : `${sign}${pct.toFixed(1)}%`;
+        const chEl   = document.getElementById('incomeChangePercent');
+        if (chEl) {
+            chEl.textContent = pctStr;
+            chEl.className = 'display-4 fw-bold ' + (pct > 0 ? 'text-success' : pct < 0 ? 'text-danger' : 'text-muted');
+        }
+    }
+
+    // ── Pajamų pokyčio detail box ──────────────────────────────────
+    function updateChangeDetail(monthly) {
+        const mKeys = monthly.labels;
+        if (mKeys.length >= 2) {
+            const prevNeto = monthly.neto[mKeys.length-2];
+            const currNeto = monthly.neto[mKeys.length-1];
+            setEl('changePrevMonth', `${mKeys[mKeys.length-2]}: ${fmt(prevNeto)}`);
+            setEl('changeCurrMonth', `${mKeys[mKeys.length-1]}: ${fmt(currNeto)}`);
+        } else if (mKeys.length === 1) {
+            setEl('changePrevMonth', '—');
+            setEl('changeCurrMonth', `${mKeys[0]}: ${fmt(monthly.neto[0])}`);
+        } else {
+            setEl('changePrevMonth', '—'); setEl('changeCurrMonth', '—');
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // GRAFIKAI
+    // ══════════════════════════════════════════════════════════════
+
+    // ── 1. Pagrindinis grafikas ────────────────────────────────────
+    function renderMainChart(monthly) {
+        const ctx   = document.getElementById('mainChart');
+        if (!ctx) return;
+        const c     = chartColors();
+        const dark  = isDark();
+        const isEmpty = !monthly.labels.length;
+        toggleEmpty('mainChartEmpty', 'mainChartWrap', isEmpty);
+        if (isEmpty) { if (chartMain) { chartMain.destroy(); chartMain = null; } return; }
+
+        // Periodo žyma
+        const period = monthly.labels.length
+            ? `${monthly.labels[0]} – ${monthly.labels[monthly.labels.length-1]}`
+            : '—';
+        setEl('mainChartPeriod', period);
+
+        if (chartMain) chartMain.destroy();
+
+        if (currentView === 'profit') {
+            // ── Categorical Line Graph: Bruto / Neto / Mokesčiai ──
+            document.getElementById('mainChartTitle').innerHTML =
+                '<i class="fa-solid fa-chart-line me-2 text-success"></i>Pajamų ir pelno dinamika';
+
+            const datasets = [
+                {
+                    label: 'Bruto pajamos (€)',
+                    data: monthly.bruto,
+                    borderColor: 'rgba(99,102,241,1)',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgba(99,102,241,1)',
+                    pointBorderColor: dark ? '#1e1e1e' : '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Likutis į rankas (€)',
+                    data: monthly.neto,
+                    borderColor: 'rgba(34,197,94,1)',
+                    backgroundColor: 'rgba(34,197,94,0.08)',
+                    borderWidth: 2.5,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgba(34,197,94,1)',
+                    pointBorderColor: dark ? '#1e1e1e' : '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Mokesčiai (€)',
+                    data: monthly.taxes,
+                    borderColor: 'rgba(239,68,68,1)',
+                    backgroundColor: 'rgba(239,68,68,0.06)',
+                    borderWidth: 2,
+                    borderDash: [5, 4],
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(239,68,68,1)',
+                    pointBorderColor: dark ? '#1e1e1e' : '#fff',
+                    pointBorderWidth: 2
+                }
+            ];
+
+            chartMain = new Chart(ctx, {
+                type: 'line',
+                data: { labels: monthly.labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: c.text, font: { weight: '600', size: 12 }, maxRotation: monthly.labels.length > 8 ? 45 : 0 }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: c.grid },
+                            ticks: { color: c.text, font: { weight: '600' }, callback: v => '€ ' + v }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: c.text, font: { weight: '600' }, usePointStyle: true, pointStyleWidth: 16, padding: 20 }
+                        },
+                        tooltip: {
+                            backgroundColor: c.tooltip, titleColor: c.text, bodyColor: c.muted,
+                            borderColor: c.grid, borderWidth: 1,
+                            callbacks: {
+                                label: item => ` ${item.dataset.label}: €${parseFloat(item.raw).toFixed(2)}`
+                            }
+                        }
+                    }
+                }
+            });
+
+        } else {
+            // ── Taxes view: grouped bars (GPM / VSD / PSD) per month ──
+            document.getElementById('mainChartTitle').innerHTML =
+                '<i class="fa-solid fa-chart-bar me-2 text-danger"></i>Mokesčių tipai per mėnesį';
+
+            const datasets = [
+                {
+                    label: 'GPM (€)',
+                    data: monthly.gpm,
+                    backgroundColor: 'rgba(239,68,68,0.82)',
+                    borderColor: 'rgba(239,68,68,1)',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    borderSkipped: false
+                },
+                {
+                    label: 'VSD (€)',
+                    data: monthly.vsd,
+                    backgroundColor: 'rgba(245,158,11,0.82)',
+                    borderColor: 'rgba(245,158,11,1)',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    borderSkipped: false
+                },
+                {
+                    label: 'PSD (€)',
+                    data: monthly.psd,
+                    backgroundColor: 'rgba(99,102,241,0.82)',
+                    borderColor: 'rgba(99,102,241,1)',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    borderSkipped: false
+                }
+            ];
+
+            chartMain = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: monthly.labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: c.text, font: { weight: '600' }, maxRotation: monthly.labels.length > 8 ? 45 : 0 }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: c.grid },
+                            ticks: { color: c.text, font: { weight: '600' }, callback: v => '€ ' + v }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: c.text, font: { weight: '600' }, usePointStyle: true, padding: 18 }
+                        },
+                        tooltip: {
+                            backgroundColor: c.tooltip, titleColor: c.text, bodyColor: c.muted,
+                            borderColor: c.grid, borderWidth: 1,
+                            callbacks: {
+                                footer: (items) => {
+                                    const total = items.reduce((s, i) => s + i.raw, 0);
+                                    return `Iš viso: €${total.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // ── 2. Donut su procentais ant grafiko ─────────────────────────
+    function renderDonutChart(totals) {
+        const ctx  = document.getElementById('taxDonutChart');
+        if (!ctx) return;
+        const c    = chartColors();
+        const dark = isDark();
+
+        const { gpm=0, vsd=0, psd=0, neto=0 } = totals;
+        const total = gpm + vsd + psd + neto;
+        const isEmpty = total <= 0;
+        toggleEmpty('donutEmpty', 'donutWrap', isEmpty);
+        if (isEmpty) { if (chartDonut) { chartDonut.destroy(); chartDonut = null; } return; }
+
+        const pct = (val) => total > 0 ? (val/total*100).toFixed(1)+'%' : '0%';
+
+        if (chartDonut) chartDonut.destroy();
+        chartDonut = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    `GPM (${pct(gpm)})`,
+                    `VSD (${pct(vsd)})`,
+                    `PSD (${pct(psd)})`,
+                    `Į rankas (${pct(neto)})`
+                ],
+                datasets: [{
+                    data: [gpm, vsd, psd, neto].map(v => +v.toFixed(2)),
+                    backgroundColor: [
+                        'rgba(239,68,68,.85)',
+                        'rgba(245,158,11,.85)',
+                        'rgba(99,102,241,.85)',
+                        'rgba(34,197,94,.85)'
+                    ],
+                    borderWidth: 3,
+                    borderColor: dark ? '#121212' : '#ffffff',
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: c.text, font: { weight:'600', size:12 }, usePointStyle:true, padding:10 }
+                    },
+                    tooltip: {
+                        backgroundColor: c.tooltip, titleColor: c.text, bodyColor: c.muted,
+                        borderColor: c.grid, borderWidth:1,
+                        callbacks: {
+                            label: ctx => ` €${ctx.raw.toFixed(2)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 3. Pajamų/mokesčių kreivė (line) ──────────────────────────
+    function renderCurveChart(monthly) {
+        const ctx  = document.getElementById('yearlyIncomeCurve');
+        if (!ctx) return;
+        const c    = chartColors();
+        const isEmpty = monthly.labels.length < 2;
+        toggleEmpty('curveEmpty', 'curveWrap', isEmpty);
+        if (isEmpty) { if (chartCurve) { chartCurve.destroy(); chartCurve = null; } return; }
+
+        let dataset;
+        if (currentView === 'profit') {
+            document.getElementById('curveTitle').innerHTML =
+                '<i class="fa-solid fa-chart-line me-2 text-success"></i>Pelno kreivė';
+            dataset = {
+                label: 'Likutis į rankas (€)',
+                data: monthly.neto,
+                borderColor: 'rgba(34,197,94,1)',
+                backgroundColor: 'rgba(34,197,94,0.1)',
+                borderWidth: 3, tension: 0.4, fill: true,
+                pointRadius: 4, pointBackgroundColor: 'rgba(34,197,94,1)',
+                pointBorderColor: '#fff', pointBorderWidth: 2
+            };
+        } else {
+            document.getElementById('curveTitle').innerHTML =
+                '<i class="fa-solid fa-chart-line me-2 text-danger"></i>Mokesčių kreivė';
+            dataset = {
+                label: 'Sumokėti mokesčiai (€)',
+                data: monthly.taxes,
+                borderColor: 'rgba(239,68,68,1)',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                borderWidth: 3, tension: 0.4, fill: true,
+                pointRadius: 4, pointBackgroundColor: 'rgba(239,68,68,1)',
+                pointBorderColor: '#fff', pointBorderWidth: 2
+            };
+        }
+
+        if (chartCurve) chartCurve.destroy();
+        chartCurve = new Chart(ctx, {
+            type: 'line',
+            data: { labels: monthly.labels, datasets: [dataset] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display:false }, ticks: { color:c.text, font:{ weight:'600' }, maxRotation:45 } },
+                    y: { beginAtZero:true, grid:{ color:c.grid }, ticks:{ color:c.text, font:{ weight:'600' }, callback: v => '€'+v } }
+                },
+                plugins: {
+                    legend: { labels:{ color:c.text, font:{ weight:'600' }, usePointStyle:true } },
+                    tooltip: { backgroundColor:c.tooltip, titleColor:c.text, bodyColor:c.muted, borderColor:c.grid, borderWidth:1 }
+                }
+            }
+        });
+    }
+
+    // ── Pilnas perpiešimas iš apiData ──────────────────────────────
+    function renderAll() {
+        if (!apiData) return;
+        const { monthly, totals, kpi } = apiData;
+        updateKpi(totals, kpi);
+        updateChangeDetail(monthly);
+        renderMainChart(monthly);
+        renderDonutChart(totals);
+        renderCurveChart(monthly);
+    }
+
+    // ── Duomenų užkrovimas iš /api/analytics ──────────────────────
+    async function loadData() {
+        document.getElementById('analyticsLoader').style.display = '';
+        document.getElementById('analyticsContent').style.display = 'none';
+
+        const params = new URLSearchParams({ year: currentYear, view: currentView });
+        try {
+            const res = await fetch(`/api/analytics?${params}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            apiData = await res.json();
+            populateYearFilter(apiData.available_years || []);
+        } catch(e) {
+            console.warn('API nepasiekiamas, naudojami demo duomenys:', e);
+            apiData = generateDemoData(currentYear);
+            populateYearFilter(['2025','2026']);
+        }
+
+        document.getElementById('analyticsLoader').style.display = 'none';
+        document.getElementById('analyticsContent').style.display = '';
+        renderAll();
+    }
+
+    // ── Demo duomenys (fallback) ───────────────────────────────────
+    function generateDemoData(yearFilter) {
+        const allMonths = ['2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03','2026-04','2026-05'];
+        const months = yearFilter === 'all' ? allMonths : allMonths.filter(m => m.startsWith(yearFilter));
+        const mNames = ['Sau','Vas','Kov','Bal','Geg','Bir','Lie','Rug','Rgs','Spa','Lap','Grd'];
+
+        const bruto=[], neto=[], taxes=[], gpm=[], vsd=[], psd=[], labels=[];
+        let tBruto=0, tNeto=0, tTax=0, tGpm=0, tVsd=0, tPsd=0, count=0;
+
+        months.forEach((mo, i) => {
+            const amt = 1200 + Math.sin(i*0.8)*400 + Math.random()*600;
+            const base = amt*0.7;
+            const g = base*0.15, vs = base*0.09, ps = base*0.0698;
+            const tax = g+vs+ps, net = amt-tax;
+            const [yr, m] = mo.split('-');
+            labels.push(`${mNames[parseInt(m,10)-1]} ${yr}`);
+            bruto.push(+amt.toFixed(2)); neto.push(+net.toFixed(2));
+            taxes.push(+tax.toFixed(2)); gpm.push(+g.toFixed(2));
+            vsd.push(+vs.toFixed(2));    psd.push(+ps.toFixed(2));
+            tBruto+=amt; tNeto+=net; tTax+=tax; tGpm+=g; tVsd+=vs; tPsd+=ps;
+            count += 2;
+        });
+
+        const prevNeto = neto.length >= 2 ? neto[neto.length-2] : 0;
+        const currNeto = neto.length >= 1 ? neto[neto.length-1] : 0;
+        const chg = prevNeto > 0 ? +((currNeto-prevNeto)/prevNeto*100).toFixed(1) : 0;
+
+        return {
+            monthly: { labels, bruto, neto, taxes, gpm, vsd, psd },
+            yearly: {
+                labels: [...new Set(allMonths.map(m=>m.slice(0,4)))],
+                bruto: [8000, 10500], neto: [5200, 7000], taxes: [2800, 3500]
+            },
+            totals: {
+                bruto: +tBruto.toFixed(2), neto: +tNeto.toFixed(2),
+                taxes: +tTax.toFixed(2),   gpm:  +tGpm.toFixed(2),
+                vsd: +tVsd.toFixed(2), psd: +tPsd.toFixed(2),
+                count, avg_invoice: +(tBruto/count).toFixed(2)
+            },
+            kpi: { change_pct: chg, invoice_count: count, avg_invoice: +(tBruto/count).toFixed(2) },
+            available_years: ['2025','2026']
+        };
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // EVENT HANDLERS
+    // ══════════════════════════════════════════════════════════════
+
+    // Metų filtras
+    document.getElementById('yearFilter')?.addEventListener('change', function() {
+        currentYear = this.value;
+        loadData();
+    });
+
+    // View toggle
+    document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentView = this.dataset.view;
+            // Persipieši tik grafikus, KPI lieka (datos tos pačios)
+            if (apiData) renderAll();
+        });
+    });
+
+    // Temos keitimas iš script.js
+    window.addEventListener('themeChanged', () => { if (apiData) renderAll(); });
+
+    // ── Startas ────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', loadData);
+    </script>
 </body>
 </html>

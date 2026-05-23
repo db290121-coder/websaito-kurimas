@@ -164,6 +164,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             refreshDashboard();
             updateChart(invoices);
+            // Informuojame analytics puslapį apie temos pasikeitimą
+            window.dispatchEvent(new Event('themeChanged'));
         });
     }
 

@@ -113,7 +113,7 @@ html {
 body {
     margin: 0;
     padding-top: 78px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', 'Inter', sans-serif;
     background-color: var(--bg-color) !important;
     background: var(--bg) !important;
     color: var(--text) !important;
@@ -1741,4 +1741,200 @@ footer {
 [data-theme="dark"] .topbar-menu--mobile {
     background: var(--surface, #1a1f2e);
     border-top-color: var(--border-color, #2d3748);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REFACTORING PATCH — 2026
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Kampų nuoseklumas: visi inputai, ikonų konteineriai, mygtukai ── */
+.form-control,
+.form-select,
+.input-group-text,
+.input-group > .form-control,
+.input-group > .form-select,
+.input-group > .input-group-text,
+.input-group > .btn {
+    border-radius: 8px !important;
+}
+
+/* Input-group vidiniai kampai – kairė/dešinė kraštai nuliniami */
+.input-group > *:not(:first-child):not(:last-child) {
+    border-radius: 0 !important;
+}
+.input-group > *:first-child {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+}
+.input-group > *:last-child {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+}
+.input-group > *:only-child {
+    border-radius: 8px !important;
+}
+
+/* ── 2. Dark mode placeholderiai ir mokesčių tekstai (telefone) ── */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] ::placeholder {
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+}
+
+[data-theme="dark"] .tax-preview-label,
+[data-theme="dark"] .preview-row .text-muted,
+[data-theme="dark"] .tax-preview-box .text-muted,
+[data-theme="dark"] .tax-preview-box span.label {
+    color: #cbd5e1 !important;
+}
+
+/* ── 3. Info ikonų paspaudimo zona telefone (padding padidinimas) ── */
+@media (max-width: 768px) {
+    .info-tip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        margin: -6px;
+        cursor: pointer;
+    }
+    .info-tip i {
+        font-size: 1rem;
+    }
+}
+
+/* ── 4. Nustatymų puslapio šoninis meniu (sidebar nav) ────────── */
+.settings-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.settings-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 96px;
+}
+
+.settings-sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.settings-sidebar-nav li + li {
+    margin-top: 2px;
+}
+
+.settings-sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    transition: background 0.18s, color 0.18s;
+}
+
+.settings-sidebar-nav a:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.settings-sidebar-nav a.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.settings-sidebar-nav a i {
+    width: 18px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.settings-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Sekcijos (rodomos/slepiamos per JS) */
+.settings-section {
+    display: none;
+}
+.settings-section.active {
+    display: block;
+}
+
+/* Lietuvos standartų šablonas – hover efektas */
+.lt-template-card {
+    cursor: pointer;
+    border: 2px solid transparent !important;
+    transition: border-color 0.2s, transform 0.15s;
+}
+.lt-template-card:hover {
+    border-color: var(--primary) !important;
+    transform: translateY(-2px);
+}
+.lt-template-card .apply-hint {
+    font-size: 0.75rem;
+    color: var(--primary);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.lt-template-card:hover .apply-hint {
+    opacity: 1;
+}
+
+/* Paskyros trynimo zona */
+.danger-zone {
+    border: 1px solid rgba(220, 38, 38, 0.3) !important;
+}
+.danger-zone .card-body {
+    background: rgba(220, 38, 38, 0.04);
+    border-radius: 12px;
+}
+[data-theme="dark"] .danger-zone {
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* ── 5. Mobilusis: settings sidebar virsta tabs ──────────────── */
+@media (max-width: 767.98px) {
+    .settings-layout {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .settings-sidebar {
+        width: 100%;
+        position: static;
+    }
+    .settings-sidebar-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .settings-sidebar-nav li {
+        flex: 1 1 auto;
+    }
+    .settings-sidebar-nav a {
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        text-align: center;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .settings-sidebar-nav a i {
+        font-size: 1rem;
+    }
 }

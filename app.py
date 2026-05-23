@@ -1,3 +1,5 @@
+import io
+
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
@@ -9,16 +11,26 @@ import os
 from datetime import datetime
 from flask import (
     Flask, request, jsonify, render_template,
-    redirect, url_for, flash, session
+    redirect, url_for, flash, session, send_file
 )
 import bcrypt
 
 from models import db, User, Invoice, TaxSettings, COUNTRY_TAX_CONFIG
+from sqlalchemy import func
+from utils import generate_invoice_pdf, send_invoice_email
+from flask_mailman import Mail, EmailMessage
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///invoices.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'jusu- pastas@gmail.com'
+app.config['MAIL_PASSWORD'] = 'jusu-programos-slaptazodis'
+mail = Mail(app)
 
 CORS(app)
 csrf = CSRFProtect(app)
@@ -205,22 +217,7 @@ def archive():
 
 @app.route('/analytics.html')
 def analytics():
-    invoices = Invoice.query.all()
-    monthly_data = {}
-    for inv in invoices:
-        month = datetime.strptime(inv.date, '%Y-%m-%d').strftime('%Y-%m')
-        if month not in monthly_data:
-            monthly_data[month] = {'amount': 0, 'tax_paid': 0, 'net_income': 0}
-        monthly_data[month]['amount'] += inv.amount or 0
-        monthly_data[month]['tax_paid'] += inv.tax_paid or 0
-        monthly_data[month]['net_income'] += inv.net_income or 0
-    sorted_months = sorted(monthly_data.keys())
-    return render_template('analytics.html',
-        months=sorted_months,
-        amounts=[round(monthly_data[m]['amount'], 2) for m in sorted_months],
-        taxes=[round(monthly_data[m]['tax_paid'], 2) for m in sorted_months],
-        net_incomes=[round(monthly_data[m]['net_income'], 2) for m in sorted_months],
-    )
+    return render_template('analytics.html')
 
 
 @app.route('/settings.html')
@@ -293,6 +290,167 @@ def update_invoice_status(invoice_id):
 
 
 # ---------------------------------------------------------------------------
+# API: Analytics – agregacijos pagal metus / rodinį
+# ---------------------------------------------------------------------------
+
+@app.route('/api/analytics', methods=['GET'])
+def analytics_api():
+    """
+    Parametrai:
+      ?year=2026          – filtruoti pagal metus (default: visi)
+      ?view=taxes         – 'profit' arba 'taxes' (default: 'profit')
+    Grąžina:
+      monthly   – mėnesiniai duomenys (labels + serijos)
+      yearly    – metiniai suvestiniai
+      totals    – bendros sumos
+      kpi       – change_pct, invoice_count, avg_invoice
+    """
+    year_param = request.args.get('year', 'all')
+    # view param perduodamas frontendui – backend grąžina abu rinkinius visada
+    user_id = current_user.id if current_user.is_authenticated else None
+
+    # Bazinė užklausa – tik prisijungusio vartotojo sąskaitos
+    base_q = Invoice.query
+    if user_id:
+        base_q = base_q.filter(Invoice.user_id == user_id)
+
+    # Metų filtras
+    if year_param and year_param != 'all':
+        base_q = base_q.filter(Invoice.date.like(f'{year_param}%'))
+
+    invoices = base_q.order_by(Invoice.date.asc()).all()
+
+    # ── Mėnesinė agregacija ──────────────────────────────────────
+    monthly_map = {}
+    for inv in invoices:
+        if not inv.date:
+            continue
+        month = inv.date[:7]  # YYYY-MM
+        if month not in monthly_map:
+            monthly_map[month] = {'bruto': 0.0, 'neto': 0.0, 'taxes': 0.0,
+                                  'gpm': 0.0, 'vsd': 0.0, 'psd': 0.0, 'count': 0}
+        amount = inv.amount or 0.0
+        # Skaičiuojame iš DB laukų; jei nėra – skaičiuojame on-the-fly
+        if inv.net_income is not None and inv.tax_paid is not None:
+            neto  = inv.net_income
+            taxes = inv.tax_paid
+            gpm   = inv.gpm   or 0.0
+            vsd   = inv.vsd   or 0.0
+            psd   = inv.psd   or 0.0
+        else:
+            f = calculate_finances(amount,
+                inv.expense_deduction_percent or 30.0,
+                inv.vsd_percent or 9.0,
+                inv.psd_percent or 6.98)
+            neto  = f['net_income']
+            taxes = f['tax_paid']
+            gpm   = f['gpm']
+            vsd   = f['vsd']
+            psd   = f['psd']
+
+        monthly_map[month]['bruto']  += amount
+        monthly_map[month]['neto']   += neto
+        monthly_map[month]['taxes']  += taxes
+        monthly_map[month]['gpm']    += gpm
+        monthly_map[month]['vsd']    += vsd
+        monthly_map[month]['psd']    += psd
+        monthly_map[month]['count']  += 1
+
+    month_names_lt = ['Sau','Vas','Kov','Bal','Geg','Bir','Lie','Rug','Rgs','Spa','Lap','Grd']
+    sorted_months = sorted(monthly_map.keys())
+
+    def fmt_label(ym):
+        yr, mo = ym.split('-')
+        return f"{month_names_lt[int(mo)-1]} {yr}"
+
+    monthly = {
+        'labels':  [fmt_label(m) for m in sorted_months],
+        'bruto':   [round(monthly_map[m]['bruto'],  2) for m in sorted_months],
+        'neto':    [round(monthly_map[m]['neto'],   2) for m in sorted_months],
+        'taxes':   [round(monthly_map[m]['taxes'],  2) for m in sorted_months],
+        'gpm':     [round(monthly_map[m]['gpm'],    2) for m in sorted_months],
+        'vsd':     [round(monthly_map[m]['vsd'],    2) for m in sorted_months],
+        'psd':     [round(monthly_map[m]['psd'],    2) for m in sorted_months],
+    }
+
+    # ── Metinė agregacija ────────────────────────────────────────
+    yearly_map = {}
+    for ym, d in monthly_map.items():
+        yr = ym[:4]
+        if yr not in yearly_map:
+            yearly_map[yr] = {'bruto': 0.0, 'neto': 0.0, 'taxes': 0.0, 'count': 0}
+        for k in ('bruto', 'neto', 'taxes', 'count'):
+            yearly_map[yr][k] += d[k]
+    sorted_years = sorted(yearly_map.keys())
+    yearly = {
+        'labels': sorted_years,
+        'bruto':  [round(yearly_map[y]['bruto'],  2) for y in sorted_years],
+        'neto':   [round(yearly_map[y]['neto'],   2) for y in sorted_years],
+        'taxes':  [round(yearly_map[y]['taxes'],  2) for y in sorted_years],
+    }
+
+    # ── Totals ───────────────────────────────────────────────────
+    total_bruto = sum(d['bruto'] for d in monthly_map.values())
+    total_neto  = sum(d['neto']  for d in monthly_map.values())
+    total_taxes = sum(d['taxes'] for d in monthly_map.values())
+    total_gpm   = sum(d['gpm']   for d in monthly_map.values())
+    total_vsd   = sum(d['vsd']   for d in monthly_map.values())
+    total_psd   = sum(d['psd']   for d in monthly_map.values())
+    total_count = len(invoices)
+
+    # ── KPI: mėnesio pokytis ─────────────────────────────────────
+    change_pct = 0.0
+    if len(sorted_months) >= 2:
+        prev = monthly_map[sorted_months[-2]]['neto']
+        curr = monthly_map[sorted_months[-1]]['neto']
+        change_pct = round((curr - prev) / prev * 100, 1) if prev > 0 else (100.0 if curr > 0 else 0.0)
+    elif len(sorted_months) == 1:
+        change_pct = 0.0
+
+    avg_invoice = round(total_bruto / total_count, 2) if total_count else 0.0
+
+    # ── SQLAlchemy func.sum() suvestinė (per vartotoją) ─────────
+    agg_q = db.session.query(
+        func.sum(Invoice.amount).label('sum_amount'),
+        func.sum(Invoice.tax_paid).label('sum_tax'),
+        func.sum(Invoice.net_income).label('sum_net'),
+        func.count(Invoice.id).label('count')
+    )
+    if user_id:
+        agg_q = agg_q.filter(Invoice.user_id == user_id)
+    if year_param and year_param != 'all':
+        agg_q = agg_q.filter(Invoice.date.like(f'{year_param}%'))
+    agg = agg_q.one()
+
+    return jsonify({
+        'monthly':  monthly,
+        'yearly':   yearly,
+        'totals': {
+            'bruto':  round(total_bruto, 2),
+            'neto':   round(total_neto,  2),
+            'taxes':  round(total_taxes, 2),
+            'gpm':    round(total_gpm,   2),
+            'vsd':    round(total_vsd,   2),
+            'psd':    round(total_psd,   2),
+            'count':  total_count,
+            'avg_invoice': avg_invoice,
+            # DB-level aggregation cross-check
+            'db_sum_amount': round(float(agg.sum_amount or 0), 2),
+            'db_sum_tax':    round(float(agg.sum_tax    or 0), 2),
+            'db_sum_net':    round(float(agg.sum_net    or 0), 2),
+        },
+        'kpi': {
+            'change_pct':    change_pct,
+            'invoice_count': total_count,
+            'avg_invoice':   avg_invoice,
+        },
+        'available_years': sorted(set(inv.date[:4] for inv in
+            (Invoice.query.filter(Invoice.user_id == user_id) if user_id else Invoice.query).all()
+            if inv.date)),
+    })
+
+
+# ---------------------------------------------------------------------------
 # API: Mokesčių nustatymai
 # ---------------------------------------------------------------------------
 
@@ -334,6 +492,31 @@ def tax_settings_api(country):
     db.session.commit()
     return jsonify({'message': 'Tax settings updated'}), 200
 
+@app.route('/download-invoice/<int:invoice_id>')
+def download_invoice(invoice_id):
+    user = User.query.get(current_user.id) # Gaunami rekvizitai iš nustatymų
+    invoice = Invoice.query.get(invoice_id)
+    
+    pdf_content = generate_invoice_pdf(user, invoice)
+    
+    return send_file(
+        io.BytesIO(pdf_content),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"Saskaita_{invoice.series_number}.pdf"
+    )
+
+@app.route('/send-invoice/<int:invoice_id>')
+def send_invoice(invoice_id):
+    user = User.query.get(current_user.id)
+    invoice = Invoice.query.get(invoice_id)
+    
+    # Sugeneruojame PDF turinį
+    pdf_content = generate_invoice_pdf(user, invoice)
+    # Išsiunčiame el. paštu
+    send_invoice_email(user, invoice, pdf_content)
+    
+    return "Sąskaita sėkmingai išsiųsta klientui!"
 
 if __name__ == '__main__':
     with app.app_context():
