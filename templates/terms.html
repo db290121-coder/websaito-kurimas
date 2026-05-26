@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paslaugų teikimo sąlygos – FreelanceFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-light">
+<nav class="topbar">
+    <div class="topbar-inner">
+        <a href="/" class="brand-group text-decoration-none">
+            <div class="brand-icon"><i class="fa-solid fa-rocket"></i></div>
+            <div>
+                <div class="brand-name">FreelanceFlow</div>
+                <div class="brand-tagline">Invoice &amp; finance hub</div>
+            </div>
+        </a>
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <button id="theme-toggle" class="theme-toggle-btn" title="Keisti temą">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="container py-5" style="max-width: 820px;">
+
+    <div class="mb-5">
+        <span class="eyebrow text-uppercase text-primary fw-semibold small">
+            <i class="fa-solid fa-file-contract me-1"></i> Teisinis dokumentas
+        </span>
+        <h1 class="display-6 fw-bold mt-2">Paslaugų teikimo sąlygos</h1>
+        <p class="text-muted">Paskutinį kartą atnaujinta: 2026 m. gegužės mėn.</p>
+    </div>
+
+    <div class="card dashboard-card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <div class="alert alert-warning rounded-3 d-flex align-items-start gap-3 mb-0" role="alert">
+                <i class="fa-solid fa-triangle-exclamation fa-lg mt-1 flex-shrink-0"></i>
+                <div>
+                    <strong>Svarbus įspėjimas dėl informacinio pobūdžio</strong><br>
+                    Visi FreelanceFlow platformoje pateikiami mokesčių skaičiavimai (GPM, VSD, PSD) yra
+                    <strong>išimtinai informacinio ir orientacinio pobūdžio</strong>. Jie nesudaro mokesčių
+                    konsultacijos, teisinės ar finansinės rekomendacijos. Tikslūs mokesčių dydžiai priklauso
+                    nuo individualių aplinkybių. <strong>Prieš priimant bet kokius finansinius sprendimus,
+                    rekomenduojame konsultuotis su sertifikuotu buhalteriu arba mokesčių specialistu.</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card dashboard-card shadow-sm border-0">
+        <div class="card-body p-4 p-md-5">
+
+            <h2 class="h5 fw-bold">1. Bendrosios nuostatos</h2>
+            <p>Šios paslaugų teikimo sąlygos (toliau – „Sąlygos") reglamentuoja FreelanceFlow platformos
+            (toliau – „Platforma") naudojimą. Naudodamiesi Platforma, jūs patvirtinate, kad perskaitėte,
+            supratote ir sutinkate laikytis šių Sąlygų. Jei nesutinkate su jomis – prašome nesinaudoti
+            Platforma.</p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">2. Informacinis mokesčių skaičiavimų pobūdis</h2>
+            <p>FreelanceFlow pateikia automatizuotus mokesčių skaičiavimus (GPM, VSD, PSD ir kitus) pagal
+            Lietuvos Respublikos teisės aktų nustatytus standartinius tarifus, galiojančius platformos
+            atnaujinimo metu. <strong>Platforma neatsako</strong> už:</p>
+            <ul>
+                <li>skaičiavimų netikslumą dėl pasikeitusių mokesčių tarifų ar teisės aktų;</li>
+                <li>individualių mokestinių aplinkybių (šeimyninės padėties, lengvatų, specialių režimų) nepaisymą;</li>
+                <li>bet kokias finansines pasekmes, kilusias remiantis Platformos skaičiavimais;</li>
+                <li>klaidas, atsiradusias dėl vartotojo įvestų neteisingų duomenų.</li>
+            </ul>
+            <p><strong>Prieš pateikiant mokesčių deklaracijas ar priimant finansinius sprendimus, būtina
+            patikrinti skaičiavimus su kvalifikuotu mokesčių specialistu.</strong></p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">3. Paslaugų apimtis ir paskyros</h2>
+            <p>Platforma teikia sąskaitų faktūrų valdymo, mokesčių skaičiavimo ir finansinės analizės
+            įrankius. Norėdami naudotis pilnu funkcionalumu, turite sukurti paskyrą. Jūs esate atsakingi
+            už paskyros duomenų konfidencialumą ir visus veiksmus, atliktus naudojant jūsų paskyrą.
+            Apie bet kokį neteisėtą naudojimąsi privalote nedelsiant pranešti administracijai.</p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">4. Duomenų apsauga ir privatumas</h2>
+            <p>Tvarkydami jūsų asmens duomenis laikomės Bendrojo duomenų apsaugos reglamento (BDAR /
+            GDPR) bei Lietuvos Respublikos asmens duomenų teisinės apsaugos įstatymo reikalavimų.
+            Platforma renka tik tuos duomenis, kurie būtini paslaugų teikimui. Išsamiau apie slapukų
+            naudojimą skaitykite <a href="/cookies" class="text-primary">Slapukų politikoje</a>.</p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">5. Intelektinė nuosavybė</h2>
+            <p>Visa Platformos programinė įranga, dizainas, tekstai ir kiti komponentai yra saugomi
+            intelektinės nuosavybės teisių. Jų kopijavimas, platinimas ar naudojimas komerciniais
+            tikslais be raštiško sutikimo yra draudžiamas.</p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">6. Atsakomybės ribojimas</h2>
+            <p>Platforma teikiama „tokia, kokia yra" (angl. <em>as is</em>) be jokių garantijų dėl
+            nepertraukiamo veikimo ar absoliutaus tikslumo. Platformos savininkas neatsako už tiesioginius
+            ar netiesioginius nuostolius, atsiradusius dėl Platformos naudojimo ar negalėjimo naudotis,
+            įskaitant – bet neapsiribojant – neteisingų skaičiavimų padarytą žalą.</p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">7. Sąlygų keitimas</h2>
+            <p>Pasiliekame teisę bet kada keisti šias Sąlygas. Esminių pakeitimų atveju vartotojai
+            informuojami el. paštu arba pranešimu Platformoje. Toliau naudodamiesi Platforma po
+            Sąlygų pakeitimų, jūs sutinkate su naujomis Sąlygomis.</p>
+
+            <hr class="my-4">
+
+            <h2 class="h5 fw-bold">8. Kontaktai</h2>
+            <p>Klausimų dėl šių Sąlygų galite rašyti el. paštu:
+                <a href="mailto:db280121@gmail.com" class="text-primary">db280121@gmail.com</a>
+            </p>
+
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fa-solid fa-arrow-left me-2"></i>Grįžti į pagrindinį
+        </a>
+    </div>
+</main>
+
+<footer class="footer mt-5">
+    <div class="footer-inner">
+        <div class="footer-content">
+            <div class="footer-left">
+                <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
+            </div>
+            <div class="footer-right">
+                <div class="footer-legal">
+                    <a href="/terms" class="text-muted text-decoration-none me-3" style="font-size:0.85rem;">Paslaugų sąlygos</a>
+                    <a href="/cookies" class="text-muted text-decoration-none" style="font-size:0.85rem;">Slapukų politika</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const html = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+    function applyTheme(t) {
+        if (t === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+            themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        } else {
+            html.removeAttribute('data-theme');
+            themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        }
+    }
+    applyTheme(localStorage.getItem('theme') || 'light');
+    themeToggle.addEventListener('click', () => {
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', next);
+        applyTheme(next);
+    });
+</script>
+</body>
+</html>
