@@ -22,11 +22,6 @@ from sqlalchemy import func
 from utils import generate_invoice_pdf, send_invoice_email
 from flask_mailman import Mail, EmailMessage
 
-from datetime import datetime, timedelta
-from functools import wraps
-from flask import redirect, url_for, flash, request, jsonify, render_template
-from flask_login import login_required, current_user
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-this-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///invoices.db')
@@ -44,8 +39,6 @@ CORS(app)
 csrf = CSRFProtect(app)
 db.init_app(app)
 migrate = Migrate(app, db)
-
-FREE_INVOICE_LIMIT = 10
 
 # ---------------------------------------------------------------------------
 # Flask-Login setup
@@ -299,72 +292,37 @@ def settings():
 @app.route('/api/invoices', methods=['GET', 'POST'])
 @csrf.exempt
 def invoices_api():
+    # FIX [SAUGUMAS]: neprisijungę vartotojai negali nei skaityti, nei kurti
     if not current_user.is_authenticated:
         return jsonify({'error': 'Unauthorized'}), 401
 
     if request.method == 'POST':
-        # ── Gegužės 26 d.: Premium limito patikrinimas ──
-        user_is_premium = is_user_premium(current_user)
-        if not user_is_premium:
-            invoice_count = Invoice.query.filter_by(user_id=current_user.id).count()
-            if invoice_count >= FREE_INVOICE_LIMIT:
-                return jsonify({
-                    'error':    'limit_reached',
-                    'message':  f'Nemokamas planas leidžia iki {FREE_INVOICE_LIMIT} sąskaitų.',
-                    'upgrade_url': url_for('upgrade')
-                }), 402  # 402 Payment Required
+        data   = request.get_json()
+        amount = float(data['amount'])
+        edp    = float(data.get('expense_deduction_percent', 30.0))
+        vp     = float(data.get('vsd_percent', 12.52))   # FIX: 12.52% default
+        pp     = float(data.get('psd_percent', 6.98))
+        f      = calculate_finances(amount, edp, vp, pp)
+        inv    = Invoice(
+            client_name              = data['client_name'],
+            amount                   = amount,
+            date                     = data['date'],
+            tax_paid                 = f['tax_paid'],
+            expense_deduction_percent= edp,
+            vsd_percent              = vp,
+            psd_percent              = pp,
+            net_income               = f['net_income'],
+            gpm                      = f['gpm'],
+            vsd                      = f['vsd'],
+            psd                      = f['psd'],
+            status                   = data.get('status', 'pending'),
+            user_id                  = current_user.id,   # FIX: visada priskiriam vartotoją
+        )
+        db.session.add(inv)
+        db.session.commit()
+        return jsonify({'message': 'Invoice added successfully'}), 201
 
-        # ── Gegužės 27 d.: try-except aplink DB įrašymą ──
-        try:
-            data   = request.get_json()
-            if not data:
-                return jsonify({'error': 'Tuščias užklausos kūnas'}), 400
-
-            # Saugus tipo konvertavimas
-            try:
-                amount = float(data['amount'])
-            except (KeyError, ValueError, TypeError):
-                return jsonify({'error': 'Netinkama suma – įveskite skaičių'}), 400
-
-            if amount <= 0:
-                return jsonify({'error': 'Suma turi būti didesnė už nulį'}), 400
-
-            edp = float(data.get('expense_deduction_percent', 30.0))
-            vp  = float(data.get('vsd_percent',               12.52))
-            pp  = float(data.get('psd_percent',               6.98))
-            f   = calculate_finances(amount, edp, vp, pp)
-
-            inv = Invoice(
-                client_name               = str(data['client_name']).strip()[:200],
-                amount                    = amount,
-                date                      = data['date'],
-                tax_paid                  = f['tax_paid'],
-                expense_deduction_percent = edp,
-                vsd_percent               = vp,
-                psd_percent               = pp,
-                net_income                = f['net_income'],
-                gpm                       = f['gpm'],
-                vsd                       = f['vsd'],
-                psd                       = f['psd'],
-                status                    = data.get('status', 'pending'),
-                user_id                   = current_user.id,
-            )
-            db.session.add(inv)
-            db.session.commit()
-            return jsonify({'message': 'Invoice added successfully', 'id': inv.id}), 201
-
-        except KeyError as e:
-            db.session.rollback()
-            return jsonify({'error': f'Trūksta lauko: {e}'}), 400
-        except ValueError as e:
-            db.session.rollback()
-            return jsonify({'error': f'Netinkama reikšmė: {e}'}), 400
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f'Invoice creation failed: {e}')
-            return jsonify({'error': 'Serverio klaida. Bandykite dar kartą.'}), 500
-
-    # GET
+    # GET: tik prisijungusio vartotojo sąskaitos
     result = []
     for inv in Invoice.query.filter_by(user_id=current_user.id).all():
         d = inv.to_dict()
@@ -377,6 +335,7 @@ def invoices_api():
                       'gpm': f['gpm'], 'vsd': f['vsd'], 'psd': f['psd']})
         result.append(d)
     return jsonify(result)
+
 
 @app.route('/api/invoices/<int:invoice_id>', methods=['DELETE'])
 @csrf.exempt
@@ -676,91 +635,6 @@ def cookies():
     return render_template('cookies.html')
 
 
-# ── Premium dekoratorius ────────────────────────────────────────────────
-def premium_required(f):
-    """Maršruto dekoratorius: leidžia tik premium vartotojams."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated:
-            return redirect(url_for('login'))
-        if not current_user.is_premium:
-            flash('Ši funkcija prieinama tik Premium vartotojams.', 'warning')
-            return redirect(url_for('upgrade'))
-        return f(*args, **kwargs)
-    return decorated
-
-
-# ── Pagalbinė funkcija: ar vartotojas dar aktyviai premium ─────────────
-def is_user_premium(user) -> bool:
-    """Tikrina premium būseną + galiojimo datą."""
-    if not user.is_premium:
-        return False
-    if user.premium_expires and user.premium_expires < datetime.utcnow():
-        # Premium pasibaigė – atjungiame automatiškai
-        user.is_premium = False
-        user.premium_expires = None
-        db.session.commit()
-        return False
-    return True
-
-
-# ── /upgrade puslapio maršrutas ────────────────────────────────────────
-@app.route('/upgrade')
-@login_required
-def upgrade():
-    return render_template('upgrade.html')
-
-
-# ── /admin/activate-premium – rankinis aktyvavimas ─────────────────────
-# Naudoti per terminalo curl arba Postman:
-#   curl -X POST https://jūsų-domenas.com/admin/activate-premium \
-#        -H "X-Admin-Key: JŪSŲ_ADMIN_RAKTAS" \
-#        -H "Content-Type: application/json" \
-#        -d '{"email": "klientas@email.com", "months": 1}'
-@app.route('/admin/activate-premium', methods=['POST'])
-def admin_activate_premium():
-    # Paprastas admin raktas – laikykite jį .env faile!
-    admin_key = request.headers.get('X-Admin-Key', '')
-    if admin_key != os.environ.get('ADMIN_SECRET_KEY', 'change-this-key'):
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    data   = request.get_json() or {}
-    email  = data.get('email', '').strip().lower()
-    months = int(data.get('months', 1))
-
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'error': f'Vartotojas {email} nerastas'}), 404
-
-    user.is_premium      = True
-    user.premium_expires = datetime.utcnow() + timedelta(days=30 * months)
-    db.session.commit()
-
-    return jsonify({
-        'message':  f'Premium aktyvuotas vartotojui {email}',
-        'expires':  user.premium_expires.isoformat(),
-        'months':   months,
-    }), 200
-
-
-# ── /admin/deactivate-premium – rankinis išjungimas ────────────────────
-@app.route('/admin/deactivate-premium', methods=['POST'])
-def admin_deactivate_premium():
-    admin_key = request.headers.get('X-Admin-Key', '')
-    if admin_key != os.environ.get('ADMIN_SECRET_KEY', 'change-this-key'):
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    data  = request.get_json() or {}
-    email = data.get('email', '').strip().lower()
-    user  = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'error': f'Vartotojas {email} nerastas'}), 404
-
-    user.is_premium      = False
-    user.premium_expires = None
-    db.session.commit()
-    return jsonify({'message': f'Premium išjungtas vartotojui {email}'}), 200
-    
 # ---------------------------------------------------------------------------
 # App paleidimas
 # ---------------------------------------------------------------------------

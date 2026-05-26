@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freelancer Invoices</title>
+    <title>Apžvalga – FreelanceFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,10 +14,10 @@
 
 <body class="bg-light">
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- ── Topbar ─────────────────────────────────────────────── -->
     <nav class="topbar">
         <div class="topbar-inner">
-    
-            <!-- Brand -->
             <a href="/" class="brand-group text-decoration-none">
                 <div class="brand-icon"><i class="fa-solid fa-rocket"></i></div>
                 <div>
@@ -25,189 +25,207 @@
                     <div class="brand-tagline">Invoice &amp; finance hub</div>
                 </div>
             </a>
-    
-            <!-- Desktop meniu -->
+
             <ul class="topbar-menu topbar-menu--desktop">
-                <li><a href="/"              class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
-                <li><a href="/archive.html"  class="topbar-link {% if '/archive' in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
-                <li><a href="/analytics.html"class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
-                {% if not current_user.is_authenticated %}<li><a href="/settings.html" class="topbar-link {% if '/settings' in request.path %}active{% endif %}">Nustatymai</a></li>{% endif %}
+                <li><a href="/"          class="topbar-link {% if request.path == '/' %}active{% endif %}">Apžvalga</a></li>
+                <li><a href="/archive"   class="topbar-link {% if '/archive'   in request.path %}active{% endif %}">Sąskaitų archyvas</a></li>
+                <li><a href="/analytics" class="topbar-link {% if '/analytics' in request.path %}active{% endif %}">Gilioji analizė</a></li>
+                <li><a href="/settings"  class="topbar-link {% if '/settings'  in request.path %}active{% endif %}">Nustatymai</a></li>
             </ul>
-    
-            <!-- Dešinė pusė: tema + auth (desktop) -->
+
             <div class="topbar-actions">
                 <button id="theme-toggle" class="theme-toggle-btn" title="Keisti temą">
                     <i class="fa-solid fa-moon"></i>
                 </button>
-    
+
                 {% if current_user.is_authenticated %}
-                    {# Prisijungęs vartotojas – rodome vardą ir išeiti #}
                     <div class="dropdown d-none d-lg-flex align-items-center">
                         <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-user me-1"></i>
                             {{ current_user.username }}
+                            {% if current_user.is_premium %}
+                            <i class="fa-solid fa-crown text-warning ms-1" title="Premium"></i>
+                            {% endif %}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <span class="dropdown-item-text small text-muted">
-                                    {{ current_user.email }}
+                                <span class="dropdown-item-text small text-muted">{{ current_user.email }}</span>
+                            </li>
+                            {% if current_user.is_premium %}
+                            <li>
+                                <span class="dropdown-item-text small text-warning">
+                                    <i class="fa-solid fa-crown me-1"></i>Premium aktyvus
                                 </span>
                             </li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item small" href="/settings.html">
-                                    <i class="fa-solid fa-gear me-2"></i>Nustatymai
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item small text-danger" href="{{ url_for('logout') }}">
-                                    <i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti
-                                </a>
-                            </li>
+                            <li><a class="dropdown-item small" href="/settings">
+                                <i class="fa-solid fa-gear me-2"></i>Nustatymai
+                            </a></li>
+                            <li><a class="dropdown-item small" href="/upgrade">
+                                <i class="fa-solid fa-crown me-2"></i>Premium planai
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item small text-danger" href="{{ url_for('logout') }}">
+                                <i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti
+                            </a></li>
                         </ul>
                     </div>
                 {% else %}
-                    {# Neprisijungęs – Prisijungti / Registruotis (desktop) #}
                     <div class="d-none d-lg-flex align-items-center gap-2">
-                        <a href="{{ url_for('login') }}"
-                        class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                             <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
                         </a>
-                        <a href="{{ url_for('register') }}"
-                        class="btn btn-sm btn-primary rounded-pill px-3">
+                        <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary rounded-pill px-3">
                             <i class="fa-solid fa-user-plus me-1"></i>Registruotis
                         </a>
                     </div>
                 {% endif %}
-    
-                <!-- Hamburger (mobile) -->
+
                 <button id="hamburger" class="hamburger" aria-label="Meniu" aria-expanded="false">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
-    
         </div>
-    
-        {# ── Mobile išskleidžiamas meniu ──────────────────────────────────────── #}
+
         <ul class="topbar-menu topbar-menu--mobile" id="mobile-menu">
-            <li><a href="/"               class="topbar-link">Apžvalga</a></li>
-            <li><a href="/archive.html"   class="topbar-link">Sąskaitų archyvas</a></li>
-            <li><a href="/analytics.html" class="topbar-link">Gilioji analizė</a></li>
-            {% if not current_user.is_authenticated %}<li><a href="/settings.html"  class="topbar-link">Nustatymai</a></li>{% endif %}
-    
-            {# Auth sekcija mobile meniu apačioje #}
+            <li><a href="/"          class="topbar-link">Apžvalga</a></li>
+            <li><a href="/archive"   class="topbar-link">Sąskaitų archyvas</a></li>
+            <li><a href="/analytics" class="topbar-link">Gilioji analizė</a></li>
+            <li><a href="/settings"  class="topbar-link">Nustatymai</a></li>
             <li class="topbar-menu-divider"></li>
-    
             {% if current_user.is_authenticated %}
                 <li class="topbar-menu-auth">
                     <i class="fa-solid fa-user text-muted me-1"></i>
                     <span class="small text-muted">{{ current_user.username }}</span>
+                    {% if current_user.is_premium %}
+                    <i class="fa-solid fa-crown text-warning ms-1"></i>
+                    {% endif %}
                 </li>
-                <li>
-                    <a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti
-                    </a>
-                </li>
+                <li><a href="/upgrade" class="topbar-link small">
+                    <i class="fa-solid fa-crown me-1"></i>Premium planai
+                </a></li>
+                <li><a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti
+                </a></li>
             {% else %}
-                <li>
-                    <a href="{{ url_for('login') }}" class="topbar-link small">
-                        <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('register') }}" class="topbar-link small">
-                        <i class="fa-solid fa-user-plus me-1"></i>Registruotis
-                    </a>
-                </li>
+                <li><a href="{{ url_for('login') }}" class="topbar-link small">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i>Prisijungti
+                </a></li>
+                <li><a href="{{ url_for('register') }}" class="topbar-link small">
+                    <i class="fa-solid fa-user-plus me-1"></i>Registruotis
+                </a></li>
             {% endif %}
         </ul>
     </nav>
 
-    <main class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="fw-bold mb-0" style="color: var(--text); font-size: 1.75rem;">Finansų apžvalga</h2>
+    <!-- ── Flash pranešimai ───────────────────────────────────── -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="container pt-3" style="max-width:1200px;">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-            <button type="button" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addInvoiceModal">
-                <i class="fa-solid fa-plus me-2"></i> Nauja sąskaita
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="container py-5">
+
+        <!-- Premium juosta (tik ne-premium vartotojams) -->
+        {% if current_user.is_authenticated and not current_user.is_premium %}
+        <div class="alert alert-info d-flex align-items-center justify-content-between gap-3 rounded-3 mb-4 flex-wrap" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-crown text-warning"></i>
+                <span class="small">Jūs naudojate nemokamą planą.
+                    {% set count = invoice_count %}
+                    <strong>{{ count }} / 10 sąskaitų</strong> panaudota.
+                </span>
+            </div>
+            <a href="/upgrade" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold flex-shrink-0">
+                <i class="fa-solid fa-crown me-1"></i>Pereiti į Premium – €4.99/mėn.
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2 class="fw-bold mb-0" style="color:var(--text); font-size:1.75rem;">
+                Finansų apžvalga
+                <span class="text-muted fw-normal fs-6 ms-2">šis mėnuo</span>
+            </h2>
+            <button type="button" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm"
+                    data-bs-toggle="modal" data-bs-target="#addInvoiceModal">
+                <i class="fa-solid fa-plus me-2"></i>Nauja sąskaita
             </button>
         </div>
-        <!-- KEY METRICS (4 Cards) -->
+
+        <!-- KEY METRICS -->
         <div class="row g-4 mb-5">
-            <div class="col-md-3">
-                <section class="card dashboard-card shadow-sm border-0">
+            <div class="col-6 col-md-3">
+                <section class="card dashboard-card shadow-sm border-0 h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title text-muted fw-semibold mb-0">Bendra suma (Bruto)</h5>
+                            <h5 class="card-title text-muted fw-semibold mb-0" style="font-size:.85rem;">Bendra suma</h5>
                             <i class="fa-solid fa-euro-sign text-primary opacity-50"></i>
                         </div>
                         <div class="stat-value" id="totalAmount">€{{ "%.2f"|format(total_amount) }}</div>
                     </div>
                 </section>
             </div>
-            <div class="col-md-3">
-                <section class="card dashboard-card shadow-sm border-0">
+            <div class="col-6 col-md-3">
+                <section class="card dashboard-card shadow-sm border-0 h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title text-muted fw-semibold mb-0">Mokesčiai</h5>
+                            <h5 class="card-title text-muted fw-semibold mb-0" style="font-size:.85rem;">Mokesčiai</h5>
                             <i class="fa-solid fa-percent text-warning opacity-50"></i>
                         </div>
                         <div class="stat-value text-warning" id="totalTax">€{{ "%.2f"|format(total_taxes) }}</div>
                     </div>
                 </section>
             </div>
-            <div class="col-md-3">
-                <section class="card dashboard-card shadow-sm border-0">
+            <div class="col-6 col-md-3">
+                <section class="card dashboard-card shadow-sm border-0 h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title text-muted fw-semibold mb-0">Likutis į rankas (Neto)</h5>
+                            <h5 class="card-title text-muted fw-semibold mb-0" style="font-size:.85rem;">Likutis į rankas</h5>
                             <i class="fa-solid fa-wallet text-success opacity-50"></i>
                         </div>
                         <div class="stat-value text-success" id="totalNet">€{{ "%.2f"|format(total_net_income) }}</div>
                     </div>
                 </section>
             </div>
-            <div class="col-md-3">
-                <section class="card dashboard-card shadow-sm border-0">
+            <div class="col-6 col-md-3">
+                <section class="card dashboard-card shadow-sm border-0 h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title text-muted fw-semibold mb-0">Sąskaitų skaičius</h5>
-                            <i class="fa-solid fa-receipt text-primary opacity-50"></i>
+                            <h5 class="card-title text-muted fw-semibold mb-0" style="font-size:.85rem;">Sąskaitų skaičius</h5>
+                            <i class="fa-solid fa-file-invoice text-info opacity-50"></i>
                         </div>
-                        <div class="stat-value text-primary" id="totalCount">{{ invoice_count }}</div>
+                        <div class="stat-value text-info" id="totalCount">{{ invoice_count }}</div>
                     </div>
                 </section>
             </div>
         </div>
 
-        <!-- RECENT TRANSACTIONS -->
-        <div class="row mb-5">
+        <!-- Naujausios sąskaitos -->
+        <div class="row g-4 mb-4">
             <div class="col-12">
                 <section class="card dashboard-card shadow-sm border-0">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h5 class="card-title mb-1">
-                                    <i class="fa-solid fa-history"></i>
-                                    Paskutinės 3 operacijos
-                                </h5>
-
-                                <p class="text-muted small mb-0">
-                                    Naujausi įrašai
-                                </p>
-                            </div>
-
-                            <a href="/archive.html"
-                            class="btn btn-outline-primary btn-sm">
-                                Žiūrėti visas sąskaitas
-                                <i class="fa-solid fa-arrow-right"></i>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fa-solid fa-clock-rotate-left me-2"></i>Paskutinės sąskaitos (šis mėnuo)
+                            </h5>
+                            <a href="/archive" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                Visos sąskaitos <i class="fa-solid fa-arrow-right ms-1"></i>
                             </a>
                         </div>
                         <div class="table-responsive">
-                            <table id="recentTable" class="table align-middle table-hover small mb-0">
+                            <table id="recentTable" class="table align-middle table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Klientas</th>
@@ -225,19 +243,22 @@
             </div>
         </div>
 
-        <!-- MINI CHART -->
+        <!-- Grafikas -->
         <div class="row">
             <div class="col-12">
                 <section class="card dashboard-card shadow-sm border-0">
                     <div class="card-body">
-                        <h5 class="card-title mb-4"><i class="fa-solid fa-chart-line"></i> Šio mėnesio grafika</h5>
-                        <div class="chart-container" style="position: relative; height: 250px;">
+                        <h5 class="card-title mb-4">
+                            <i class="fa-solid fa-chart-line me-2"></i>Šio mėnesio grafika
+                        </h5>
+                        <div class="chart-container" style="position:relative; height:250px;">
                             <canvas id="miniChart"></canvas>
                         </div>
                         <p class="text-muted small mt-3 mb-0">
-                            <i class="fa-solid fa-info-circle"></i> 
-                            Norėdami matyti detalesnę analizę (pajamos pagal mėnesį, metų tendencijos, mokesčių proporcijos), 
-                            <a href="/analytics.html">eikite į "Gilioji analizė"</a>.
+                            <i class="fa-solid fa-info-circle me-1"></i>
+                            Norėdami matyti detalesnę analizę,
+                            <!-- FIX: pašalintas target="_blank" – atidaroma tame pačiame lange -->
+                            <a href="/analytics">eikite į „Gilioji analizė"</a>.
                         </p>
                     </div>
                 </section>
@@ -246,115 +267,52 @@
     </main>
 
     <!-- MODAL: ADD INVOICE -->
-    <div class="modal fade"
-     id="addInvoiceModal"
-     tabindex="-1"
-     aria-labelledby="addInvoiceModalLabel"
-     aria-hidden="true">
-
+    <div class="modal fade" id="addInvoiceModal" tabindex="-1"
+         aria-labelledby="addInvoiceModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0">
-
                 <div class="modal-header">
-                    <h5 class="modal-title"
-                        id="addInvoiceModalLabel">
-
-                        <i class="fa-solid fa-file-invoice"></i>
-                        Nauja sąskaita
+                    <h5 class="modal-title" id="addInvoiceModalLabel">
+                        <i class="fa-solid fa-file-invoice me-2"></i>Nauja sąskaita
                     </h5>
-
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-
                 <div class="modal-body">
-
-                    <form id="invoiceForm"
-                        class="row g-3">
-
+                    <form id="invoiceForm" class="row g-3">
                         <div class="col-12">
-                            <label class="form-label fw-semibold">
-                                Klientas
-                            </label>
-
-                            <input type="text"
-                                id="client"
-                                class="form-control"
-                                placeholder="UAB Pavyzdys"
-                                required>
+                            <label class="form-label fw-semibold">Klientas</label>
+                            <input type="text" id="client" class="form-control"
+                                   placeholder="UAB Pavyzdys" required autocomplete="off">
                         </div>
-
                         <div class="col-12">
-                            <label class="form-label fw-semibold">
-                                Suma be PVM (€)
-                            </label>
-
-                            <input type="number"
-                                id="amount"
-                                class="form-control"
-                                placeholder="0.00"
-                                min="0"
-                                step="0.01"
-                                required>
+                            <label class="form-label fw-semibold">Suma (€)</label>
+                            <input type="number" id="amount" class="form-control"
+                                   placeholder="0.00" min="0.01" step="0.01" required>
                         </div>
-
                         <div class="col-12">
-                            <label class="form-label fw-semibold">
-                                Data
-                            </label>
-
-                            <input type="date"
-                                id="date"
-                                class="form-control"
-                                required>
+                            <label class="form-label fw-semibold">Data</label>
+                            <input type="date" id="date" class="form-control" required>
                         </div>
-
                         <div class="col-12">
-                            <label class="form-label fw-semibold">
-                                Būsena
-                            </label>
-
-                            <select id="status"
-                                    class="form-select">
-
-                                <option value="paid">
-                                    Apmokėta
-                                </option>
-
-                                <option value="pending">
-                                    Laukia
-                                </option>
-
+                            <label class="form-label fw-semibold">Būsena</label>
+                            <select id="status" class="form-select">
+                                <option value="paid">Apmokėta</option>
+                                <option value="pending" selected>Laukia</option>
                             </select>
                         </div>
-
                     </form>
-
                 </div>
-
                 <div class="modal-footer">
-
-                    <button type="button"
-                            class="btn btn-light"
-                            data-bs-dismiss="modal">
-                        Atšaukti
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Atšaukti</button>
+                    <button type="button" class="btn btn-primary" id="submitBtn">
+                        <i class="fa-solid fa-plus me-1"></i>Pridėti sąskaitą
                     </button>
-
-                    <button type="button"
-                            class="btn btn-primary"
-                            id="submitBtn">
-
-                        <i class="fa-solid fa-plus"></i>
-                        Pridėti sąskaitą
-                    </button>
-
                 </div>
-
             </div>
         </div>
     </div>
 
+    <!-- Footer -->
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-content">
@@ -366,13 +324,15 @@
                 </div>
                 <div class="footer-right">
                     <div class="footer-social">
-                        <a href="https://t.me/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
-                        <a href="https://twitter.com/DaniilB287715" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                        <!-- FIX: socialiniai tinklai lieka su target="_blank" (teisingas) -->
+                        <a href="https://t.me/jusu_vartotojo_vardas"   class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+                        <a href="https://twitter.com/DaniilB287715"    class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
                         <a href="https://linkedin.com/in/jusu_vartotojo_vardas" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
-                        <a href="https://github.com/DaniilBolshoj" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                        <a href="https://github.com/DaniilBolshoj"     class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
                         <div class="footer-legal mt-2">
-                            <a href="/terms" target="_blank" class="text-muted text-decoration-none me-3" style="font-size: 0.85rem;">Paslaugų sąlygos</a>
-                            <a href="/cookies" target="_blank" class="text-muted text-decoration-none" style="font-size: 0.85rem;">Slapukų politika</a>
+                            <!-- FIX: pašalintas target="_blank" – vidiniai puslapiai atidaromi tame pačiame lange -->
+                            <a href="/terms"   class="text-muted text-decoration-none me-3" style="font-size:.85rem;">Paslaugų sąlygos</a>
+                            <a href="/cookies" class="text-muted text-decoration-none"      style="font-size:.85rem;">Slapukų politika</a>
                         </div>
                     </div>
                 </div>
@@ -382,9 +342,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='consent_popup.js') }}"></script>
 </body>
 </html>

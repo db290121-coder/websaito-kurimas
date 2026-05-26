@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium – FreelanceFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .plan-card {
+            border-radius: 20px;
+            border: 2px solid var(--border-color, #e0e7ff);
+            transition: transform .2s, box-shadow .2s;
+            background: var(--surface, #fff);
+        }
+        .plan-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(79,70,229,.12); }
+        .plan-card.plan-premium {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79,70,229,.08);
+        }
+        .plan-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #fff; font-size: .7rem; font-weight: 700;
+            letter-spacing: .06em; text-transform: uppercase;
+            padding: 3px 12px; border-radius: 20px; margin-bottom: .75rem;
+        }
+        .plan-price { font-size: 2.6rem; font-weight: 800; color: var(--text, #0f172a); }
+        .plan-price sup { font-size: 1.2rem; vertical-align: super; }
+        .plan-price span { font-size: 1rem; font-weight: 500; color: var(--muted, #667085); }
+        .feature-list { list-style: none; padding: 0; margin: 0; }
+        .feature-list li { padding: .45rem 0; font-size: .9rem; display: flex; align-items: center; gap: .6rem; }
+        .feature-list li .ok  { color: #22c55e; }
+        .feature-list li .no  { color: #94a3b8; }
+        .step-num {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(79,70,229,.1); color: #4f46e5;
+            font-weight: 700; font-size: .9rem;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .copy-btn { cursor: pointer; }
+        .revolut-box {
+            background: rgba(79,70,229,.05);
+            border: 1.5px dashed rgba(79,70,229,.3);
+            border-radius: 14px; padding: 1.25rem 1.5rem;
+        }
+        .iban-code { font-family: monospace; font-size: 1.05rem; letter-spacing: .04em; }
+        [data-theme="dark"] .plan-card { background: #1e293b; border-color: rgba(255,255,255,.08); }
+        [data-theme="dark"] .plan-card.plan-premium { border-color: #6366f1; }
+        [data-theme="dark"] .revolut-box { background: rgba(99,102,241,.08); border-color: rgba(99,102,241,.25); }
+    </style>
+</head>
+<body class="bg-light">
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Topbar -->
+<nav class="topbar">
+    <div class="topbar-inner">
+        <a href="/" class="brand-group text-decoration-none">
+            <div class="brand-icon"><i class="fa-solid fa-rocket"></i></div>
+            <div>
+                <div class="brand-name">FreelanceFlow</div>
+                <div class="brand-tagline">Invoice &amp; finance hub</div>
+            </div>
+        </a>
+        <ul class="topbar-menu topbar-menu--desktop">
+            <li><a href="/"               class="topbar-link">Apžvalga</a></li>
+            <li><a href="/archive"        class="topbar-link">Sąskaitų archyvas</a></li>
+            <li><a href="/analytics"      class="topbar-link">Gilioji analizė</a></li>
+            {% if current_user.is_authenticated %}
+            <li><a href="/settings"       class="topbar-link">Nustatymai</a></li>
+            {% endif %}
+        </ul>
+        <div class="topbar-actions">
+            <button id="theme-toggle" class="theme-toggle-btn" title="Keisti temą">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            {% if current_user.is_authenticated %}
+            <div class="dropdown d-none d-lg-flex align-items-center">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 dropdown-toggle"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-user me-1"></i>{{ current_user.username }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><span class="dropdown-item-text small text-muted">{{ current_user.email }}</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item small" href="/settings"><i class="fa-solid fa-gear me-2"></i>Nustatymai</a></li>
+                    <li><a class="dropdown-item small text-danger" href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket me-2"></i>Atsijungti</a></li>
+                </ul>
+            </div>
+            {% endif %}
+            <button id="hamburger" class="hamburger" aria-label="Meniu" aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </div>
+    <ul class="topbar-menu topbar-menu--mobile" id="mobile-menu">
+        <li><a href="/"           class="topbar-link">Apžvalga</a></li>
+        <li><a href="/archive"    class="topbar-link">Sąskaitų archyvas</a></li>
+        <li><a href="/analytics"  class="topbar-link">Gilioji analizė</a></li>
+        {% if current_user.is_authenticated %}
+        <li><a href="/settings"   class="topbar-link">Nustatymai</a></li>
+        {% endif %}
+        <li class="topbar-menu-divider"></li>
+        {% if current_user.is_authenticated %}
+        <li class="topbar-menu-auth">
+            <i class="fa-solid fa-user text-muted me-1"></i>
+            <span class="small text-muted">{{ current_user.username }}</span>
+        </li>
+        <li><a href="{{ url_for('logout') }}" class="topbar-link topbar-link--danger small">
+            <i class="fa-solid fa-right-from-bracket me-1"></i>Atsijungti
+        </a></li>
+        {% endif %}
+    </ul>
+</nav>
+
+<main class="container py-5" style="max-width: 960px;">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 mb-4" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Antraštė -->
+    <div class="text-center mb-5">
+        <span class="eyebrow text-uppercase text-primary fw-semibold small">
+            <i class="fa-solid fa-crown me-1"></i> Premium planai
+        </span>
+        <h1 class="display-6 fw-bold mt-2">Pasirinkite savo planą</h1>
+        <p class="text-muted">Nemokamas planas – visam laikui. Premium – be jokių išlaidų sau.</p>
+    </div>
+
+    <!-- Planų kortelės -->
+    <div class="row g-4 mb-5 justify-content-center">
+
+        <!-- Free -->
+        <div class="col-md-5">
+            <div class="plan-card p-4 h-100">
+                <p class="text-muted fw-semibold small text-uppercase mb-1">Nemokamas</p>
+                <div class="plan-price mb-1"><sup>€</sup>0<span>/mėn.</span></div>
+                <p class="text-muted small mb-4">Visam laikui nemokamai</p>
+                <ul class="feature-list mb-4">
+                    <li><i class="fa-solid fa-check ok"></i> Iki <strong>10 sąskaitų</strong></li>
+                    <li><i class="fa-solid fa-check ok"></i> Mokesčių skaičiavimas (GPM, VSD, PSD)</li>
+                    <li><i class="fa-solid fa-check ok"></i> CSV eksportas</li>
+                    <li><i class="fa-solid fa-check ok"></i> PDF generavimas</li>
+                    <li><i class="fa-solid fa-xmark no"></i> <span class="text-muted">Gilioji analizė</span></li>
+                    <li><i class="fa-solid fa-xmark no"></i> <span class="text-muted">Neriboti įrašai</span></li>
+                    <li><i class="fa-solid fa-xmark no"></i> <span class="text-muted">Prioritetinė pagalba</span></li>
+                </ul>
+                {% if current_user.is_authenticated and not current_user.is_premium %}
+                <span class="btn btn-outline-secondary w-100 rounded-3 disabled">Dabartinis planas</span>
+                {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100 rounded-3">Pradėti nemokamai</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Premium -->
+        <div class="col-md-5">
+            <div class="plan-card plan-premium p-4 h-100">
+                <div class="plan-badge"><i class="fa-solid fa-crown me-1"></i> Premium</div>
+                <div class="plan-price mb-1"><sup>€</sup>4.99<span>/mėn.</span></div>
+                <p class="text-muted small mb-4">Atšaukiamas bet kada</p>
+                <ul class="feature-list mb-4">
+                    <li><i class="fa-solid fa-check ok"></i> <strong>Neriboti</strong> sąskaitų įrašai</li>
+                    <li><i class="fa-solid fa-check ok"></i> Mokesčių skaičiavimas (GPM, VSD, PSD)</li>
+                    <li><i class="fa-solid fa-check ok"></i> CSV eksportas</li>
+                    <li><i class="fa-solid fa-check ok"></i> PDF generavimas</li>
+                    <li><i class="fa-solid fa-check ok"></i> <strong>Gilioji analizė</strong> – pilna prieiga</li>
+                    <li><i class="fa-solid fa-check ok"></i> Metų tendencijų grafikai</li>
+                    <li><i class="fa-solid fa-check ok"></i> Prioritetinė el. pašto pagalba</li>
+                </ul>
+                {% if current_user.is_authenticated and current_user.is_premium %}
+                <span class="btn btn-success w-100 rounded-3 disabled">
+                    <i class="fa-solid fa-crown me-2"></i>Jūs – Premium!
+                </span>
+                {% else %}
+                <a href="#payment-section" class="btn btn-primary w-100 rounded-3 fw-semibold">
+                    <i class="fa-solid fa-arrow-down me-2"></i>Aktyvuoti Premium – €4.99/mėn.
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Mokėjimo instrukcija -->
+    {% if not (current_user.is_authenticated and current_user.is_premium) %}
+    <div id="payment-section" class="card dashboard-card shadow-sm border-0 mb-4">
+        <div class="card-body p-4 p-md-5">
+            <h2 class="h5 fw-bold mb-4">
+                <i class="fa-solid fa-credit-card me-2 text-primary"></i>Kaip aktyvuoti Premium?
+            </h2>
+            <div class="d-flex flex-column gap-4">
+
+                <!-- 1 žingsnis -->
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="step-num">1</div>
+                    <div>
+                        <p class="fw-semibold mb-1">Atlikite mokėjimą per Revolut arba bankinį pavedimą</p>
+                        <div class="revolut-box">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small fw-semibold text-muted text-uppercase">Gavėjo IBAN</span>
+                                <button class="btn btn-sm btn-outline-primary rounded-pill copy-btn"
+                                        onclick="copyText('LT00 0000 0000 0000 0000', this)">
+                                    <i class="fa-regular fa-copy me-1"></i>Kopijuoti
+                                </button>
+                            </div>
+                            <p class="iban-code mb-2">LT00 0000 0000 0000 0000</p>
+                            <!-- ↑ PAKEISKITE Į SAVO TIKRĄ IBAN -->
+                            <div class="row g-2 small text-muted">
+                                <div class="col-sm-6">
+                                    <strong>Gavėjas:</strong> Daniil Bolšoj
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Suma:</strong> €4.99
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Bankas:</strong> Revolut Bank
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Mokėjimo paskirtis:</strong> Jūsų el. paštas
+                                </div>
+                            </div>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            Mokėjimo paskirtyje nurodykite savo registracijos el. paštą, kad galėtume
+                            jus identifikuoti.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 2 žingsnis -->
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="step-num">2</div>
+                    <div>
+                        <p class="fw-semibold mb-1">Išsiųskite patvirtinimą el. paštu</p>
+                        <p class="text-muted small mb-2">
+                            Po apmokėjimo nusiųskite ekrano kopiją arba pavedimo patvirtinimą į:
+                        </p>
+                        <a href="mailto:db280121@gmail.com?subject=FreelanceFlow Premium aktyvavimas&body=Sveiki%2C%0A%0AAš sumokėjau už Premium planą.%0AEl. paštas: {{ current_user.email if current_user.is_authenticated else 'jūsų@paštas.lt' }}%0A%0APridedu mokėjimo patvirtinimą."
+                           class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="fa-solid fa-envelope me-2"></i>db280121@gmail.com
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 3 žingsnis -->
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="step-num">3</div>
+                    <div>
+                        <p class="fw-semibold mb-1">Gausite patvirtinimą per 24 val.</p>
+                        <p class="text-muted small mb-0">
+                            Patikrinsime mokėjimą ir aktyvuosime Premium paskyrą per 24 val.
+                            (paprastai per kelias valandas darbo valandomis).
+                            Aktyvavimo patvirtinimą gausite el. paštu.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- DUK -->
+    <div class="card dashboard-card shadow-sm border-0">
+        <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3"><i class="fa-solid fa-circle-question me-2 text-primary"></i>D.U.K.</h2>
+            <div class="accordion accordion-flush" id="faqAccordion">
+
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-semibold small" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faq1">
+                            Ar galiu atšaukti prenumeratą?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Taip. Tiesiog nebenaudokite – kitą mėnesį nesumokėjus, paskyra automatiškai
+                            grįš į nemokamą planą. Jokių slaptų mokesčių.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-semibold small" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Ar mano duomenys išsaugomi, jei grįžtu į nemokamą planą?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Taip. Visi jūsų sąskaitų duomenys išlieka. Tik nauji įrašai bus ribojami,
+                            jei viršysite 10 sąskaitų limitą.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-semibold small" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Kada planuojamas automatinis (Stripe) mokėjimas?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Dirbama prie automatinės Stripe integracijos. Tuo tarpu naudojame
+                            rankinį mokėjimų patvirtinimą, kuris yra toks pat patikimas.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<footer class="footer mt-5">
+    <div class="footer-inner">
+        <div class="footer-content">
+            <div class="footer-left">
+                <p class="footer-copyright">&copy; 2026 FreelanceFlow. Visos teisės saugomos.</p>
+            </div>
+            <div class="footer-center">
+                <p class="footer-contact-info">Kontaktas: db280121@gmail.com</p>
+            </div>
+            <div class="footer-right">
+                <div class="footer-legal">
+                    <a href="/terms"   class="text-muted text-decoration-none me-3" style="font-size:.85rem;">Paslaugų sąlygos</a>
+                    <a href="/cookies" class="text-muted text-decoration-none"      style="font-size:.85rem;">Slapukų politika</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='consent_popup.js') }}"></script>
+<script>
+    // Tema
+    const html = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+    function applyTheme(t) {
+        if (t === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+            themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        } else {
+            html.removeAttribute('data-theme');
+            themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        }
+    }
+    applyTheme(localStorage.getItem('theme') || 'light');
+    themeToggle.addEventListener('click', () => {
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', next);
+        applyTheme(next);
+    });
+
+    // Hamburger
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (hamburger && mobileMenu) {
+        hamburger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = mobileMenu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', isOpen);
+            hamburger.innerHTML = isOpen
+                ? '<i class="fa-solid fa-xmark"></i>'
+                : '<i class="fa-solid fa-bars"></i>';
+        });
+        document.addEventListener('click', (e) => {
+            if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                hamburger.innerHTML = '<i class="fa-solid fa-bars"></i>';
+            }
+        });
+    }
+
+    // IBAN kopijuoti
+    function copyText(text, btn) {
+        navigator.clipboard.writeText(text.replace(/\s/g, '')).then(() => {
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check me-1"></i>Nukopijuota!';
+            btn.classList.replace('btn-outline-primary', 'btn-success');
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.classList.replace('btn-success', 'btn-outline-primary');
+            }, 2000);
+        });
+    }
+
+    // Scroll topbar
+    window.addEventListener('scroll', () => {
+        const topbar = document.querySelector('.topbar');
+        if (topbar) topbar.classList.toggle('shrink', window.scrollY > 50);
+    });
+</script>
+</body>
+</html>
